@@ -1,0 +1,79 @@
+# ENTRY(0x00401000)
+
+INPUT(
+    out/generated.o
+    out/i686-linux-musl-native/lib/crt1.o
+    out/i686-linux-musl-native/lib/crti.o
+    out/i686-linux-musl-native/lib/gcc/i686-linux-musl/11.2.1/crtbeginT.o
+    out/compat.o
+    out/i686-linux-musl-native/lib/gcc/i686-linux-musl/11.2.1/libgcc.a
+    out/i686-linux-musl-native/lib/gcc/i686-linux-musl/11.2.1/libgcc_eh.a
+    out/i686-linux-musl-native/lib/libc.a
+    out/i686-linux-musl-native/lib/gcc/i686-linux-musl/11.2.1/crtend.o
+    out/i686-linux-musl-native/lib/crtn.o
+)
+
+MEMORY
+{
+    TEXT        (rx)  : ORIGIN = 0x01000000, LENGTH =  0x10000
+    RODATA      (r)   : ORIGIN = 0x01010000, LENGTH =  0x10000
+    DATA        (rw)  : ORIGIN = 0x01020000, LENGTH =  0x10000
+    BSS         (rwx) : ORIGIN = 0x01100000, LENGTH = 0x100000
+
+    WIN_TEXT    (rx)  : ORIGIN = 0x00401000, LENGTH = 0x244000
+    WIN_RODATA  (r)   : ORIGIN = 0x00646000, LENGTH =  0x14000
+    WIN_DATA    (rw)  : ORIGIN = 0x0065a000, LENGTH =  0x67000
+    WIN_IDATA   (rw)  : ORIGIN = 0x006d4000, LENGTH =   0x1000
+    WIN_BSS     (rw)  : ORIGIN = 0x00647000, LENGTH =  0x52000
+}
+
+SECTIONS
+{
+    .text :
+        {
+        out/compat.o (.text)
+        }
+        > TEXT
+
+    .rodata :
+        {
+        out/compat.o (.eh_frame .rodata .rodata.*)
+        }
+        > RODATA
+
+    .data :
+        {
+        out/compat.o (.data .data.*)
+        }
+        > DATA
+
+    .bss (NOLOAD) :
+        {
+        out/compat.o (.bss)
+        }
+        > BSS
+
+    .text 0x00401000 :
+        {
+        out/generated.o (.text)
+        }
+        > WIN_TEXT
+
+    .rodata 0x00646000 :
+        {
+        out/generated.o (.rodata)
+        }
+        > WIN_RODATA
+
+    .data   0x0065a000 :
+        {
+        out/generated.o (.data)
+        }
+        > WIN_DATA
+
+    .idata  0x006d4000 :
+        {
+        out/generated.o (.idata)
+        }
+        > WIN_IDATA
+}
