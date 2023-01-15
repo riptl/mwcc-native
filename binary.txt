@@ -1,0 +1,1150 @@
+Dos Header
+==========
+Magic:                        5a4d
+Used Bytes In The LastPage:   90
+File Size In Pages:           3
+Number Of Relocation:         0
+Header Size In Paragraphs:    4
+Minimum Extra Paragraphs:     0
+Maximum Extra Paragraphs:     ffff
+Initial Relative SS:          0
+Initial SP:                   b8
+Checksum:                     0
+Initial IP:                   0
+Initial Relative CS:          0
+Address Of Relocation Table:  40
+Overlay Number:               0
+OEM id:                       0
+OEM info:                     0
+Address Of New Exe Header:    80
+
+Header
+======
+Signature:                    50 45 0 0 
+Machine:                      I386
+Number Of Sections:           9
+Pointer To Symbol Table:      0
+Number Of Symbols:            0
+Size Of Optional Header:      e0
+Characteristics:              EXECUTABLE_IMAGE - LINE_NUMS_STRIPPED - LOCAL_SYMS_STRIPPED - CHARA_32BIT_MACHINE
+Time Date Stamp:              44f727df
+
+Optional Header
+===============
+Magic:                           10b
+Major Linker Version:            3
+Minor Linker Version:            2
+Size Of Code:                    243400
+Size Of Initialized Data:        b8600
+Size Of Uninitialized Data:      51200
+Address Of Entry Point:          1000
+Base Of Code:                    1000
+Base Of Data:                    245000
+Image Base:                      400000
+Section Alignment:               1000
+File Alignment:                  200
+Major Operating System Version:  4
+Minor Operating System Version:  0
+Major Image Version:             0
+Minor Image Version:             0
+Major Subsystem Version:         4
+Minor Subsystem Version:         0
+Win32 Version Value:             0
+Size Of Image:                   354000
+Size Of Headers:                 400
+CheckSum:                        0
+Subsystem:                       WINDOWS_CUI
+DLL Characteristics:             
+Size Of Stack Reserve:           100000
+Size Of Stack Commit:            1000
+Size Of Heap Reserve:            100000
+Size Of Heap Commit:             1000
+Loader Flags:                    0
+Number Of RVA And Size:          10
+
+Data directories
+================
+Data directory "EXPORT_TABLE"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "IMPORT_TABLE"
+RVA: 0x   2d4000
+Size: 0x  ad0
+Section:  .idata
+
+Data directory "RESOURCE_TABLE"
+RVA: 0x   2c1000
+Size: 0x  11550
+Section:  .rsrc
+
+Data directory "EXCEPTION_TABLE"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "CERTIFICATE_TABLE"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "BASE_RELOCATION_TABLE"
+RVA: 0x   327000
+Size: 0x  2c9e4
+Section:  .reloc
+
+Data directory "DEBUG"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "ARCHITECTURE"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "GLOBAL_PTR"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "TLS_TABLE"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "LOAD_CONFIG_TABLE"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "BOUND_IMPORT"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "IAT"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "DELAY_IMPORT_DESCRIPTOR"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "CLR_RUNTIME_HEADER"
+RVA: 0x   0
+Size: 0x  0
+
+Data directory "RESERVED"
+RVA: 0x   0
+Size: 0x  0
+
+
+Sections
+========
+.text     243319    1000      243400    400       0         6.58215   CNT_CODE - MEM_EXECUTE - MEM_READ
+.exc      1e4       245000    200       243800    0         4.72919   CNT_INITIALIZED_DATA - MEM_READ
+.rdata    13216     246000    13400     243a00    0         6.4212    CNT_INITIALIZED_DATA - MEM_READ
+.data     660a8     25a000    66200     256e00    0         4.45933   CNT_INITIALIZED_DATA - MEM_READ - MEM_WRITE
+.rsrc     11550     2c1000    11600     2bd000    0         3.41584   CNT_INITIALIZED_DATA - MEM_READ - MEM_WRITE
+.CRT      14        2d3000    200       2ce600    0         2.21924   CNT_INITIALIZED_DATA - MEM_READ - MEM_WRITE
+.idata    ad0       2d4000    c00       2ce800    0         5.17878   CNT_INITIALIZED_DATA - MEM_READ - MEM_WRITE
+.bss      510c6     2d5000    0         0         0         0         CNT_UNINITIALIZED_DATA - MEM_READ - MEM_WRITE
+.reloc    2c9e4     327000    2ca00     2cf400    0         6.74562   CNT_INITIALIZED_DATA - MEM_DISCARDABLE - MEM_READ
+
+Imports
+=======
+ADVAPI32.dll        2d40a0    2d425c    0         0         
+	 - RegOpenKeyExA                    2d4418              2d4418              1e2                 
+	 - RegQueryValueExA                 2d442a              2d442a              1ec                 
+	 - RegCloseKey                      2d443e              2d443e              1c9                 
+
+KERNEL32.dll        2d40b0    2d426c    0         0         
+	 - ExitProcess                      2d445c              2d445c              af                  
+	 - IsBadReadPtr                     2d446c              2d446c              229                 
+	 - RtlUnwind                        2d447c              2d447c              2cc                 
+	 - GetCurrentProcess                2d448a              2d448a              13a                 
+	 - DuplicateHandle                  2d44a0              2d44a0              8c                  
+	 - GetLastError                     2d44b4              2d44b4              169                 
+	 - GetStdHandle                     2d44c4              2d44c4              1b1                 
+	 - InitializeCriticalSection        2d44d4              2d44d4              219                 
+	 - DeleteCriticalSection            2d44f2              2d44f2              7a                  
+	 - EnterCriticalSection             2d450c              2d450c              8f                  
+	 - LeaveCriticalSection             2d4524              2d4524              247                 
+	 - FindFirstFileA                   2d453c              2d453c              c9                  
+	 - GetFileAttributesA               2d454e              2d454e              156                 
+	 - FindNextFileA                    2d4564              2d4564              d3                  
+	 - FindClose                        2d4576              2d4576              c5                  
+	 - GetCommandLineA                  2d4584              2d4584              108                 
+	 - GetEnvironmentStrings            2d4598              2d4598              14d                 
+	 - FreeEnvironmentStringsA          2d45b2              2d45b2              ed                  
+	 - GetCurrentDirectoryA             2d45ce              2d45ce              138                 
+	 - CreateProcessA                   2d45e6              2d45e6              60                  
+	 - WaitForSingleObject              2d45f8              2d45f8              385                 
+	 - GetExitCodeProcess               2d4610              2d4610              152                 
+	 - CloseHandle                      2d4626              2d4626              2e                  
+	 - TlsAlloc                         2d4636              2d4636              356                 
+	 - TlsFree                          2d4642              2d4642              357                 
+	 - TlsGetValue                      2d464e              2d464e              358                 
+	 - TlsSetValue                      2d465e              2d465e              359                 
+	 - GetModuleHandleA                 2d466e              2d466e              177                 
+	 - GetModuleFileNameA               2d4682              2d4682              175                 
+	 - LoadLibraryA                     2d4698              2d4698              248                 
+	 - FreeLibrary                      2d46a8              2d46a8              ef                  
+	 - GlobalAlloc                      2d46b8              2d46b8              1ee                 
+	 - GlobalFree                       2d46c8              2d46c8              1f5                 
+	 - GetFullPathNameA                 2d46d6              2d46d6              161                 
+	 - SetFilePointer                   2d46ea              2d46ea              310                 
+	 - WriteFile                        2d46fc              2d46fc              397                 
+	 - ReadFile                         2d470a              2d470a              2ab                 
+	 - CreateFileA                      2d4716              2d4716              4d                  
+	 - GetTickCount                     2d4726              2d4726              1d5                 
+	 - DeleteFileA                      2d4736              2d4736              7c                  
+	 - MoveFileA                        2d4746              2d4746              264                 
+	 - FormatMessageA                   2d4754              2d4754              ea                  
+	 - GetFileTime                      2d4766              2d4766              15d                 
+	 - SetFileTime                      2d4776              2d4776              314                 
+	 - GetFileSize                      2d4786              2d4786              15b                 
+	 - SetEndOfFile                     2d4796              2d4796              305                 
+	 - CreateDirectoryA                 2d47a6              2d47a6              45                  
+	 - RemoveDirectoryA                 2d47ba              2d47ba              2ba                 
+	 - SetStdHandle                     2d47ce              2d47ce              32c                 
+	 - GetSystemTime                    2d47de              2d47de              1be                 
+	 - SystemTimeToFileTime             2d47f0              2d47f0              34e                 
+	 - CompareFileTime                  2d4808              2d4808              33                  
+	 - GlobalReAlloc                    2d481c              2d481c              1fc                 
+	 - GlobalFlags                      2d482e              2d482e              1f4                 
+	 - FileTimeToSystemTime             2d483e              2d483e              bc                  
+	 - FindResourceA                    2d4856              2d4856              da                  
+	 - LoadResource                     2d4868              2d4868              24d                 
+	 - LockResource                     2d4878              2d4878              25b                 
+	 - SizeofResource                   2d4888              2d4888              348                 
+	 - CreateFileMappingA               2d489a              2d489a              4e                  
+	 - MapViewOfFile                    2d48b0              2d48b0              25e                 
+	 - UnmapViewOfFile                  2d48c2              2d48c2              365                 
+	 - GetSystemDirectoryA              2d48d6              2d48d6              1b9                 
+	 - GetWindowsDirectoryA             2d48ee              2d48ee              1e9                 
+	 - SetConsoleCtrlHandler            2d4906              2d4906              2e3                 
+	 - GetConsoleScreenBufferInfo       2d4920              2d4920              12f                 
+	 - SetFileAttributesA               2d493e              2d493e              30e                 
+	 - OpenFileMappingA                 2d4954              2d4954              276                 
+	 - MultiByteToWideChar              2d4968              2d4968              26b                 
+	 - IsValidCodePage                  2d4980              2d4980              235                 
+	 - GetACP                           2d4994              2d4994              f5                  
+	 - GetLocalTime                     2d499e              2d499e              16b                 
+	 - GetTimeZoneInformation           2d49ae              2d49ae              1d8                 
+
+LMGR8C.dll          2d41d8    2d4394    0         0         
+	 - 800000be            800000be            0                   
+	 - 800000bd            800000bd            0                   
+	 - 800000bf            800000bf            0                   
+
+USER32.dll          2d41e8    2d43a4    0         0         
+	 - MessageBoxA                      2d49e2              2d49e2              1de                 
+	 - LoadStringA                      2d49f2              2d49f2              1ca                 
+
+VERSION.dll         2d41f4    2d43b0    0         0         
+	 - GetFileVersionInfoSizeA          2d4a0e              2d4a0e              1                   
+	 - GetFileVersionInfoA              2d4a2a              2d4a2a              0                   
+	 - VerQueryValueA                   2d4a42              2d4a42              a                   
+
+WS2_32.dll          2d4204    2d43c0    0         0         
+	 - 80000073            80000073            0                   
+	 - 8000006f            8000006f            0                   
+	 - 8000000f            8000000f            0                   
+	 - 8000000c            8000000c            0                   
+	 - 80000016            80000016            0                   
+	 - 80000003            80000003            0                   
+	 - 80000074            80000074            0                   
+	 - 80000017            80000017            0                   
+	 - 80000009            80000009            0                   
+	 - 8000000b            8000000b            0                   
+	 - 80000004            80000004            0                   
+	 - 80000012            80000012            0                   
+	 - 80000097            80000097            0                   
+	 - 80000013            80000013            0                   
+	 - 80000010            80000010            0                   
+
+ole32.dll           2d4244    2d4400    0         0         
+	 - CoInitialize                     2d4a6c              2d4a6c              3a                  
+	 - CoUninitialize                   2d4a7c              2d4a7c              68                  
+	 - CoCreateInstance                 2d4a8e              2d4a8e              10                  
+	 - CoTaskMemFree                    2d4aa2              2d4aa2              64                  
+	 - CoTaskMemAlloc                   2d4ab4              2d4ab4              63                  
+
+
+Resources
+=========
+  [Directory] ID: 03 - ICON
+    [Directory] ID: 01
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 02
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+  [Directory] ID: 06 - STRING
+    [Directory] ID: 01
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 07
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 08
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 09
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 10
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 11
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 12
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 13
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 14
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 15
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 16
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 17
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 18
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 19
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 20
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 21
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 22
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 23
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 24
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 25
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 26
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 27
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 28
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 29
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 30
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 31
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 32
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 33
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 34
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 35
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 36
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 63
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 64
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 65
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 66
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 67
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 68
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 69
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 70
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 71
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 72
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+    [Directory] ID: 73
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+  [Directory] ID: 14 - GROUP_ICON
+    [Directory] APPICON
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+  [Directory] ID: 16 - VERSION
+    [Directory] ID: 01
+      [Data] ID: 1033 - ENGLISH/ENGLISH_US
+
+Types: ICON - STRING - GROUP_ICON - VERSION
+
+Langs: ENGLISH
+
+Sub-langs: ENGLISH_US
+
+Version
+=======
+
+type: 0
+key:  VS_VERSION_INFO
+
+Fixed file info
+===============
+Signature:       feef04bd
+Struct version:  10000
+File version:    4 - 1 - 0 - 60831
+Product version: 4 - 1 - 0 - 60831
+File OS:         NT_WINDOWS32
+File type:       DLL
+
+String file info
+================
+type:  1
+key:   StringFileInfo
+
+type:   1
+key:    040904b0: (ENGLISH - ENGLISH_US - UTF_16)
+Items:  
+    'CompanyName': 'Freescale Semiconductor, Inc.'
+    'ProductVersion': '4.0.0.0'
+    'FileVersion': '4.0.0.0'
+    'FileDescription': 'CodeWarrior GAMECUBE C/C++ Compiler'
+    'ProductName': 'Freescale CodeWarrior'
+    'LegalCopyright': 'Copyright © 2006'
+
+
+Var file info
+=============
+type:         1
+key:          VarFileInfo
+Translations: UTF_16/ENGLISH/ENGLISH_US
+
+
+Icon #0 : 
+ID:                              1
+Size:                            32x32 pixels
+Color count:                     10
+Reserved:                        0
+Planes:                          1
+Bit count:                       4
+Hash:                            ffffffffd91f2823
+
+Icon #1 : 
+ID:                              2
+Size:                            16x16 pixels
+Color count:                     10
+Reserved:                        0
+Planes:                          1
+Bit count:                       4
+Hash:                            7568f1c
+
+StringTable[0]: ### Error: Compilation aborted at end of file ###
+StringTable[1]: Save precompiled header as...
+StringTable[2]: ### Error while creating precompiled headerfile (OSErr %ld) ###
+StringTable[3]: ### Error while writing precompiled headerfile (OSErr %ld) ### 
+StringTable[4]: internal compiler error (report to <cw_bug@freescale.com>)
+while executing in file '%s' line: %ld
+(compiling '%s' in '%s')
+StringTable[5]: ran out of registers--turn on Global Optimization for this function
+StringTable[6]: ### Error: Out of memory ###
+StringTable[7]: ### User break detected ###
+StringTable[8]: ### Error: Cannot open main file ###
+StringTable[9]: Analyzing symbol table...
+StringTable[10]: Writing precompiled header file...
+StringTable[11]: Running instrumenter...
+StringTable[12]: Recompiling instrumented code...
+StringTable[13]: compiler assertion '%s' failed
+while executing in file '%s' line: %ld
+(compiling '%s' in '%s')
+StringTable[14]: illegal character constant
+StringTable[15]: illegal string constant
+StringTable[16]: unexpected end of file
+StringTable[17]: unterminated comment
+StringTable[18]: undefined preprocessor directive
+StringTable[19]: illegal token
+StringTable[20]: string too long
+StringTable[21]: identifier expected
+StringTable[22]: macro '%u' redefined
+StringTable[23]: illegal argument list
+StringTable[24]: too many macro arguments
+StringTable[25]: macro(s) too complex
+StringTable[26]: unexpected end of line
+StringTable[27]: end of line expected
+StringTable[28]: '(' expected
+StringTable[29]: ')' expected
+StringTable[30]: ',' expected
+StringTable[31]: preprocessor syntax error
+StringTable[32]: preceding #if is missing
+StringTable[33]: unterminated #if / macro
+StringTable[34]: unexpected token
+StringTable[35]: declaration syntax error
+StringTable[36]: identifier '%u' redeclared
+StringTable[37]: ';' expected
+StringTable[38]: illegal constant expression
+StringTable[39]: ']' expected
+StringTable[40]: illegal use of type '%t'
+StringTable[41]: illegal function definition
+StringTable[42]: illegal function return type
+StringTable[43]: illegal array declaration
+StringTable[44]: '}' expected
+StringTable[45]: illegal struct/union/enum/class definition
+StringTable[46]: struct/union/enum/class tag '%u' redefined
+StringTable[47]: struct/union/class member '%u' redefined
+StringTable[48]: declarator expected
+StringTable[49]: '{' expected
+StringTable[50]: illegal use of incomplete struct/union/class '%t'
+StringTable[51]: struct/union/class size exceeds 32K
+StringTable[52]: illegal bitfield type '%t'
+StringTable[53]: division by 0
+StringTable[54]: undefined identifier '%u'
+StringTable[55]: expression syntax error
+StringTable[56]: not an lvalue
+StringTable[57]: illegal operation
+StringTable[58]: illegal operand
+StringTable[59]: data type is incomplete
+StringTable[60]: illegal type
+StringTable[61]: too many initializers
+StringTable[62]: pointer/array required
+StringTable[63]: not a struct/union/class
+StringTable[64]: '%u' is not a struct/union/class member
+StringTable[65]: the file '%u' cannot be opened
+StringTable[66]: illegal instruction for this processor
+StringTable[67]: illegal operands for this processor
+StringTable[68]: number is out of range
+StringTable[69]: illegal addressing mode
+StringTable[70]: illegal data size
+StringTable[71]: illegal register list
+StringTable[72]: branch out of range
+StringTable[73]: undefined label '%u'
+StringTable[74]: reference to label '%u' is out of range
+StringTable[75]: call of non-function
+StringTable[76]: function call does not match prototype
+StringTable[77]: illegal use of register variable
+StringTable[78]: illegal type cast
+StringTable[79]: function already has a stackframe
+StringTable[80]: function has no initialized stackframe
+StringTable[81]: value is not stored in register
+StringTable[82]: function nesting too complex
+StringTable[83]: illegal use of keyword
+StringTable[84]: ':' expected
+StringTable[85]: label '%u' redefined
+StringTable[86]: case constant defined more than once
+StringTable[87]: default label defined more than once
+StringTable[88]: illegal initialization
+StringTable[89]: illegal use of inline function
+StringTable[90]: illegal type qualifier(s)
+StringTable[91]: illegal storage class
+StringTable[92]: function has no prototype
+StringTable[93]: illegal assignment to constant
+StringTable[94]: illegal use of precompiled header
+StringTable[95]: illegal data in precompiled header (%u)
+StringTable[96]: variable / argument '%u' is not used in function
+StringTable[97]: illegal use of direct parameters
+StringTable[98]: return value expected
+StringTable[99]: variable '%u' is not initialized before being used
+StringTable[100]: illegal #pragma
+StringTable[101]: illegal access to protected/private member
+StringTable[102]: ambiguous access to class/struct/union member
+StringTable[103]: illegal use of 'this'
+StringTable[104]: unimplemented feature: %u
+StringTable[105]: illegal use of 'HandleObject'
+StringTable[106]: illegal access qualifier
+StringTable[107]: illegal 'operator' declaration
+StringTable[108]: illegal use of abstract class ('%o')
+StringTable[109]: illegal use of pure function
+StringTable[110]: illegal reference type '%t'
+StringTable[111]: illegal function overloading
+StringTable[112]: illegal operator overloading
+StringTable[113]: ambiguous access to overloaded function 
+StringTable[114]: illegal access/using declaration
+StringTable[115]: illegal 'friend' declaration
+StringTable[116]: illegal 'inline' function definition
+StringTable[117]: class has no default constructor
+StringTable[118]: illegal operator
+StringTable[119]: illegal default argument(s)
+StringTable[120]: possible unwanted ';'
+StringTable[121]: possible unwanted assignment
+StringTable[122]: possible unwanted compare
+StringTable[123]: illegal implicit conversion from '%t' to
+'%t'
+StringTable[124]: local data >32k
+StringTable[125]: illegal jump past initializer
+StringTable[126]: illegal ctor initializer
+StringTable[127]: cannot construct %t's base class '%t'
+StringTable[128]: cannot construct %t's direct member '%u'
+StringTable[129]: #if nesting overflow
+StringTable[130]: illegal empty declaration
+StringTable[131]: illegal implicit enum conversion from '%t' to
+'%t'
+StringTable[132]: illegal use of #pragma parameter
+StringTable[133]: virtual functions cannot be pascal functions
+StringTable[134]: illegal implicit const/volatile pointer conversion from '%t' to
+'%t'
+StringTable[135]: illegal use of non-static member
+StringTable[136]: illegal precompiled header version (%u)
+StringTable[137]: illegal precompiled header compiler flags or target (%u)
+StringTable[138]: 'const' or '&' variable needs initializer
+StringTable[139]: '%o' hides inherited virtual function '%o'
+StringTable[140]: pascal function cannot be overloaded
+StringTable[141]: virtual function override type mismatch between '%o' and '%o'
+'%t'
+'%t'
+StringTable[142]: non-const '&' reference initialized to temporary
+StringTable[143]: illegal template declaration
+StringTable[144]: '<' expected
+StringTable[145]: '>' expected
+StringTable[146]: illegal template argument(s)
+StringTable[147]: cannot instantiate '%o'
+StringTable[148]: template redefined
+StringTable[149]: template parameter mismatch
+StringTable[150]: cannot pass const/volatile data object to non-const/volatile member function
+StringTable[151]: preceding '#pragma push' is missing
+StringTable[152]: illegal explicit template instantiation
+StringTable[153]: illegal X::X(X) copy constructor
+StringTable[154]: function defined 'inline' after being called
+StringTable[155]: illegal constructor/destructor declaration
+StringTable[156]: 'catch' expected
+StringTable[157]: #include nesting overflow
+StringTable[158]: cannot convert
+'%t' to
+'%t'
+StringTable[159]: type mismatch
+'%t' and
+'%t'
+StringTable[160]: class type expected
+StringTable[161]: illegal explicit conversion from '%t' to
+'%t'
+StringTable[162]: function call '*' does not match
+StringTable[163]: identifier '%u' redeclared
+was declared as: '%t'
+now declared as: '%t'
+StringTable[164]: cannot throw class with ambiguous base class ('%u')
+StringTable[165]: class '%t': '%o' has more than one final overrider:
+'%o'
+and '%o'
+StringTable[166]: exception handling option is disabled
+StringTable[167]: cannot delete pointer to const
+StringTable[168]: cannot destroy const object
+StringTable[169]: const member '%u' is not initialized
+StringTable[170]: '&' reference member '%u' is not initialized
+StringTable[171]: RTTI option is disabled
+StringTable[172]: constness casted away
+StringTable[173]: illegal const/volatile '&' reference initialization
+StringTable[174]: inconsistent linkage: 'extern' object redeclared as 'static'
+StringTable[175]: unknown assembler instruction mnemonic
+StringTable[176]: local data > 224 bytes
+StringTable[177]: '%u' could not be assigned to a register
+StringTable[178]: illegal exception specification
+StringTable[179]: exception specification list mismatch '%e' and '%e'
+StringTable[180]: the parameter(s) of the '%n' function must be immediate value(s)
+StringTable[181]: SOM classes can only inherit from other SOM based classes
+StringTable[182]: SOM classes inhertiance must be virtual
+StringTable[183]: SOM class data members must be private
+StringTable[184]: illegal SOM function overload '%o'
+StringTable[185]: no static members allowed in SOM classes
+StringTable[186]: no parameters allowed in SOM class constructors
+StringTable[187]: illegal SOM function parameters or return type
+StringTable[188]: SOM runtime function '%u' not defined (should be defined in somobj.hh)
+StringTable[189]: SOM runtime function '%u' has unexpected type
+StringTable[190]: '%u' is not a SOM class
+StringTable[191]: illegal use of #pragma outside of SOM class definition
+StringTable[192]: introduced method '%o' is not specified in release order list
+StringTable[193]: SOM class access qualification only allowed to direct parent or own class
+StringTable[194]: SOM class must have one non-inline member function
+StringTable[195]: SOM type '%u' undefined
+StringTable[196]: new SOM callstyle method '%o' must have explicit 'Environment *' parameter
+StringTable[197]: functions cannot return SOM classes
+StringTable[198]: functions cannot have SOM class arguments
+StringTable[199]: assignment is not supported for SOM classes
+StringTable[200]: sizeof() is not supported for SOM classes
+StringTable[201]: SOM classes	cannot be class members
+StringTable[202]: global SOM class objects are not supported
+StringTable[203]: SOM class arrays are not supported
+StringTable[204]: 'pointer to member' is not supported for SOM classes
+StringTable[205]: SOM class has no release order list
+StringTable[206]: '%u' is not an Objective-C class
+StringTable[207]: method '%m' redeclared
+StringTable[208]: undefined method '%m'
+StringTable[209]: class '%u' redeclared
+StringTable[210]: class '%t' redefined
+StringTable[211]: Objective-C type '%u' is undefined (should be defined in objc.h)
+StringTable[212]: Objective-C type '%u' has unexpected type
+StringTable[213]: method '%m' not defined
+StringTable[214]: method '%m' redefined
+StringTable[215]: illegal use of 'self'
+StringTable[216]: illegal use of 'super'
+StringTable[217]: illegal message receiver
+StringTable[218]: receiver cannot handle this message
+StringTable[219]: ambiguous message selector
+used: '%m'
+also had: '%m'
+StringTable[220]: unknown message selector
+StringTable[221]: illegal use of Objective-C object
+StringTable[222]: protocol '%u' redefined
+StringTable[223]: protocol '%u' is undefined
+StringTable[224]: protocol '%u' is already in protocol list
+StringTable[225]: category '%u' redefined
+StringTable[226]: category '%u' is undefined
+StringTable[227]: illegal use of '%u'
+StringTable[228]: template too complex or recursive
+StringTable[229]: illegal return value in void/constructor/destructor function
+StringTable[230]: assigning a non-int numeric value to an unprototyped function
+StringTable[231]: implicit arithmetic conversion from '%t' to '%t'
+StringTable[232]: preprocessor #error directive
+StringTable[233]: ambiguous access to name found '%u' and '%u'
+StringTable[234]: illegal namespace
+StringTable[235]: illegal use of namespace name
+StringTable[236]: illegal name overloading
+StringTable[237]: instance variable list does not match @interface
+StringTable[238]: protocol list does not match @interface
+StringTable[239]: super class does not match @interface
+StringTable[240]: function result is a pointer/reference to an automatic/temporary variable
+StringTable[241]: cannot allocate initialized objects in the scratchpad
+StringTable[242]: illegal class member access
+StringTable[243]: data object '%o' redefined
+StringTable[244]: illegal access to local variable from other function
+StringTable[245]: illegal implicit member pointer conversion
+StringTable[246]: typename redefined
+StringTable[247]: object '%o' redefined
+StringTable[248]: 'main' not defined as external 'int main()' function
+StringTable[249]: illegal explicit template specialization
+StringTable[250]: name has not been declared in namespace/class
+StringTable[251]: preprocessor #warning directive
+StringTable[252]: illegal use of asm inline function
+StringTable[253]: illegal use of C++ feature in EC++
+StringTable[254]: illegal use of template argument dependent type 'T::%u'
+StringTable[255]: illegal use of alloca() in function argument
+StringTable[256]: '%o' inline function call from '%o' not inlined
+StringTable[257]: inconsistent use of 'class' and 'struct' keywords
+StringTable[258]: illegal partial specialization
+StringTable[259]: illegal partial specialization argument list
+StringTable[260]: ambiguous use of partial specialization
+StringTable[261]: local classes shall not have member templates
+StringTable[262]: illegal template argument dependent expression
+StringTable[263]: implicit 'int' is no longer supported in C++
+StringTable[264]: %i pad byte(s) inserted after data member '%u'
+StringTable[265]: pure function '%o' is not virtual
+StringTable[266]: illegal virtual function '%o' in 'union'
+StringTable[267]: cannot pass 'void' or 'function' parameter
+StringTable[268]: illegal static const member '%u' initialization
+StringTable[269]: 'typename' is missing in template argument dependent qualified type
+StringTable[270]: more than one expression in non-class type conversion
+StringTable[271]: template non-type argument '%o' does not have external linkage
+StringTable[272]: illegal or unsupported __attribute__
+StringTable[273]: deprecated
+StringTable[274]: cannot create object file '%f'
+StringTable[275]: error writing to object file '%f'
+StringTable[276]: printf-family format string doesn't match arguments
+StringTable[277]: scanf-family format string doesn't match arguments
+StringTable[278]: __alignof__() is not supported for SOM classes
+StringTable[279]: illegal macro argument name '%u'
+StringTable[280]: case has an empty range of values
+StringTable[281]: 'long long' switch() is not supported
+StringTable[282]: 'long long' case range is not supported
+StringTable[283]: expression has no side effect
+StringTable[284]: result of function call is not used
+StringTable[285]: illegal non-type template argument
+StringTable[286]: illegal use of abstract class ('%t')
+StringTable[287]: illegal use of 'template' prefix
+StringTable[288]: template parameter/argument list mismatch
+StringTable[289]: cannot find matching deallocation function for '%t'
+StringTable[290]: illegal operand '%t'
+StringTable[291]: illegal operands '%t' %u '%t'
+StringTable[292]: illegal use of default template-argument
+StringTable[293]: illegal UUID syntax
+StringTable[294]: __uuidof() is not supported for SOM classes
+StringTable[295]: illegal access from '%t' to protected/private member '%o'
+StringTable[296]: integral type is not large enough to hold pointer
+StringTable[297]: deprecated
+StringTable[298]: illegal use of const/volatile function qualifier sequence
+StringTable[299]: illegal optimization level for this limited version of CodeWarrior
+StringTable[300]: no UUID defined for type '%t'
+StringTable[301]: using implicit copy assignment for class with const or reference member ('%t')
+StringTable[302]: unimplemented assembler instruction/directive
+StringTable[303]: override of dllimport function '%u' only has application/DLL scope
+StringTable[304]: illegal combination of operands in inline statement at line %i
+StringTable[305]: illegal operand in inline statement at line %i
+StringTable[306]: function call '*' is ambiguous
+StringTable[307]: '%u' is not a member of class '%t'
+StringTable[308]: immediate operand in inline statement at line %i cannot span more than 8 bits
+StringTable[309]: '__except' or '__finally' expected
+StringTable[310]: cannot mix structured exception handling and C++ exception handling
+StringTable[311]: illegal multiway transfer out of __try...__finally statement
+StringTable[312]: illegal use of structured exception handling keyword outside of __try statement
+StringTable[313]: illegal use of __leave in __try...__except statement
+StringTable[314]: unions cannot have reference members
+StringTable[315]: unions cannot have static data members
+StringTable[316]: unions cannot have nontrivial class members
+StringTable[317]: unions cannot have base classes
+StringTable[318]: unions cannot be used as base classes
+StringTable[319]: '%u' is not a member of namespace '%t'
+StringTable[320]: '%u' is not a class/namespace name
+StringTable[321]: '%u' is not a class name
+StringTable[322]: recursive operator-> delegation
+StringTable[323]: illegal use of type-name
+StringTable[324]: empty array must be last class/struct member
+StringTable[325]: included file '%u' is spelled differently on disk ('%u')
+StringTable[326]: illegal access from '%t' to protected/private member '%t::%u'
+StringTable[327]: illegal access from '%t' to protected/private base class '%t'
+StringTable[328]: no matching error(s) reported in error check mode
+StringTable[329]: ambiguous ?: expression, '%t' can be converted to '%t' and vice versa
+StringTable[330]: override '%o' is declared without 'virtual' keyword
+StringTable[331]: illegal use of calling convention declarator
+StringTable[332]: calling convention ignored due to incompatible compiler options
+StringTable[333]: illegal redefinition of UUID for '%t'
+StringTable[334]: using '#pragma once [on]' in a precompiled header
+StringTable[335]: ambiguous access from '%t' to '%t'
+StringTable[336]: allocation/deallocation functions shall be global scope or class members
+StringTable[337]: types that are declared in parameter lists ('%u') go out of scope at the end of the function declaration/definition,
+this is probably not what you want (maybe use a forward declaration?)
+StringTable[338]: internal scanner error (report to <cw_bug@freescale.com>)
+StringTable[339]: expression too complex (perhaps enable optimizer?)
+StringTable[340]: too many errors emitted, quitting
+StringTable[341]: out of memory
+StringTable[342]: cannot load main source file (%u)
+StringTable[343]: the file '%u' cannot be opened (%u)
+StringTable[344]: system does not support converting from '%u',
+treating as ASCII
+StringTable[345]: unterminated comment
+StringTable[346]: unknown escape sequence '\%u'
+StringTable[347]: number expected
+StringTable[348]: string expected
+StringTable[349]:     (corresponding #line reference)
+StringTable[350]:     (location of previous definition)
+StringTable[351]: argument expected while expanding macro '%u' (got %i, wanted %u%i)
+StringTable[352]: unexpected argument while expanding macro '%u' (wanted %i)
+StringTable[353]: invalid token pasting of '%u' and '%u'
+StringTable[354]: illegal token for integral constant expression
+StringTable[355]: illegal number
+StringTable[356]: invalid integer constant
+StringTable[357]: invalid floating-point constant
+StringTable[358]: character is out of range
+StringTable[359]: character cannot be represented in a 'long long'
+StringTable[360]: illegal universal character 0x%x
+StringTable[361]: ASCII shift state expected
+StringTable[362]: multi-byte character constant
+StringTable[363]: illegal multi-line string constant
+StringTable[364]: loss of precision in floating-point constant
+StringTable[365]: nested comment detected
+StringTable[366]: illegal universal character sequence
+StringTable[367]: illegal UTF-8 sequence, treating as raw bytes
+StringTable[368]: the (elided) copy constructor '%o' is not callable because the reference parameter cannot be bound to an rvalue
+StringTable[369]: could not create or write file '%u' for instrumentation ('%u')
+StringTable[370]: could not read file '%u' for instrumentation ('%u')
+StringTable[371]: cannot locate instrumenter program '%u' (PATH='%u', AMC_HOME='%u')
+StringTable[372]: cannot execute instrumenter program '%u' (%u)
+(command line: '%u')
+%u
+StringTable[373]: instrumenter program '%u' failed with exit code %i
+(command line: '%u')
+%u
+StringTable[374]: cannot use precompiled header '%u' with these instrumentation options
+StringTable[375]: compatible IDB list changed; you may want to remove object code and rebuild this target
+StringTable[376]: undefined macro '%u' used in #if or #elif conditional
+StringTable[377]: combining character detected at beginning of identifier
+StringTable[378]: extended universal character used in identifier
+StringTable[379]: cannot locate prefix file '%u'
+StringTable[380]: illegal option '%u'
+StringTable[381]: cannot query option '%u'
+StringTable[382]: object '%o' hidden by local declaration
+StringTable[383]: complex types are not implemented
+StringTable[384]: variable length arrays cannot be used in function template prototypes or local template typedefs
+StringTable[385]: variable length array types can only be used in local or function prototype scope
+StringTable[386]: the local type '%t' cannot be used in template arguments
+StringTable[387]: '<' expected (you may have accidentally used a <: token)
+StringTable[388]: template argument list expected
+StringTable[389]: illegal bitfield size '%i'
+StringTable[390]: invalid message number
+StringTable[391]: could not generate intrinsic '%u' due to incompatible arguments or compiler options
+StringTable[392]: illegal macro name; '%u' is a C++ keyword
+StringTable[393]: illegal macro name '%u'
+StringTable[394]: deleting a void pointer is undefined
+StringTable[395]: cannot enable instance manager here
+StringTable[396]: some instances are missing; please rebuild
+StringTable[397]: illegal or unsupported __declspec
+StringTable[398]: illegal use of __declspec(%u)
+StringTable[399]: illegal use of function qualifier(s)
+StringTable[400]: illegal use of data qualifier(s)
+StringTable[401]: pointer to integral conversion
+StringTable[402]: integral to pointer conversion
+StringTable[403]: cannot modify '%u' after declarations have begun
+StringTable[404]: using non-POD classes in variable argument lists is undefined
+StringTable[405]: %i arguments to gcc style inline assember exceeded maximum number supported (%i)
+StringTable[406]: %i alternates in a single argument to gcc style inline assember exceeded maximum number supported (%i)
+StringTable[407]: GCC style assembler processing could not match any of the constraints in '%u'.
+StringTable[408]: GCC constraint '%u' is not supported at this time.
+StringTable[409]: ignored attribute '%u' due to conflict with calling convention
+StringTable[410]: size of type is too large (maximum %i bytes)
+StringTable[411]: whitespace expected after integer constant (at '%u')
+StringTable[412]: illegal use of expression statement outside function
+StringTable[413]: a pointer/array type was expected for this operation instead of '%t'
+StringTable[414]: cannot write file '%u' (%u)
+StringTable[415]: direct struct members shall not have base classes
+StringTable[416]: anonymous unions/structs shall not have private/protected members
+StringTable[417]: anonymous unions/structs shall not have member functions
+StringTable[418]: illegal object definition in precompiled header:
+'%o'
+StringTable[419]: illegal overloading '%o'
+was declared as '%t'
+now declared as '%t'
+StringTable[420]: cannot use #pragma %u after declarations have begun
+StringTable[421]: the object '%o' has already been instantiated
+StringTable[422]: static assert check '%u' failed
+StringTable[423]: shell returned error %i storing object data for '%u' (whichfile=%i)
+StringTable[424]: cannot load IDB manipulation DLL ('%u');
+please use external instrumenter
+StringTable[425]: cannot locate symbol '%u' in IDB manipulation DLL ('%u');
+please use external instrumenter
+StringTable[426]: unsupported version '%u' in IDB manipulation DLL ('%u')
+StringTable[427]: IDB error: %u
+StringTable[428]: cannot instrument function '%u' since its body spans multiple files
+('%u':%i -> '%u':%i)
+StringTable[429]: illegal IPA file format
+StringTable[430]: illegal IPA file version
+StringTable[431]: the global object '%o' (%t)
+from '%u'
+conflicts with the object '%o' (%t)
+in '%u'
+StringTable[432]: the global type '%t'
+definded in '%u'
+conflicts with a type in '%u'
+StringTable[433]: shell returned error %i loading object data for '%u' (whichfile=%i)
+StringTable[434]: invalid tagging method option value '%u'
+(expected integer for 'Write to address...' or expression containing '@' for 'Write through expression...')
+StringTable[435]: overriding IDB filename to %u for current multi-target IDB mode
+StringTable[436]: cannot add file '%u' to project (error %i); reset 'read-only' flag if necessary
+StringTable[437]: invalid memory allocator map file syntax in file '%u' line %i
+StringTable[438]: environment variable 'AMC_HOME' not defined:
+using built-in CodeTEST declarations and disabling C++ memory coverage
+StringTable[439]: cannot read file '%u':
+using built-in CodeTEST declarations and disabling C++ memory coverage
+StringTable[440]: did not find declaration for '%u' in '%u'
+StringTable[441]: cannot use both '#pragma instrument no_tag_files' and '#pragma instrument only_tag_files'
+StringTable[442]: #pragma '%u' is meaningless for native instrumentation
+StringTable[443]: cannot load allocator call map ('%u'); disabling memory instrumentation
+StringTable[444]: this target's IDB file not found in compatible IDB file list (%u)
+StringTable[445]: this feature is not supported in this release
+StringTable[446]: the global object '%o' is not defined
+StringTable[447]: CodeTEST compilation not supported during concurrent builds
+StringTable[448]: expected formal macro argument after '#'
+StringTable[449]: illegal or unsupported alignment value
+StringTable[450]: structs/classes with flexibile array members cannot be used as struct/class members or array elements
+StringTable[451]: flexible array member in otherwise empty struct
+StringTable[452]: cannot initialize nested flexible array members
+StringTable[453]: intrinsic functions cannot be defined
+StringTable[454]: the exception specification of the function '%o'
+is more restrictive than the specification of the override '%o'
+StringTable[455]: the target exception specification '%e'
+is more restrictive than the source specification '%e'
+StringTable[456]:     (corresponding point of instantiation)
+StringTable[457]:     (corresponding point of instantiation for '%t')
+StringTable[458]:     (corresponding point of instantiation for '%o')
+StringTable[459]: possible unwanted use of object address
+StringTable[460]: illegal 'main()' function call
+StringTable[461]: function declaration conflicts with using declaration for '%o'
+StringTable[462]: explicit template specialization without 'template<>' prefix
+StringTable[463]: illegal use of 'template<>' prefix
+StringTable[464]: the 'override' function '%o' does not override any inherited functions
+StringTable[465]: the 'final' function '%o' is overridden by '%o'
+StringTable[466]: environment variable '%u' not defined: using empty string as default
+StringTable[467]: local variables/parameters ('%o') shall not be used in a default argument
+StringTable[468]: no suitable copy-ctor for class '%t'
+StringTable[469]: the type '::std::type_info' that is required for 'typeid' expressions is not defined (usually defined in the <typeinfo> header file)
+StringTable[470]: no members allowed after a flexible array
+StringTable[471]: 'typename' is not required/legal in this context
+StringTable[472]: calling class method using an instance
+StringTable[473]: calling instance method using class method
+StringTable[474]: the const or reference class member '%u' is not initialized
+StringTable[475]: the enumerator '%u' does not have a matching case label
+StringTable[476]: C99 this cast is incompatible with the C99 typing rules and could make the alias by type analysis fail
+StringTable[477]: identifier '%u' redeclared as '%t'
+StringTable[478]: identifier '%u' was originally declared as '%t'
+StringTable[479]: 'typename' prefix used outside of template
+StringTable[480]: initializing '%t' with braces is non-standard
+StringTable[481]: declaration specifier conflict: %s
+StringTable[482]: flexible arrays are not allowed in unions
+StringTable[483]: the parameter '%u' has not been declared
+StringTable[484]: ambiguous use of local variable(%n, assigned to %n) and assembler register(%n) name
+StringTable[485]: ambiguous use of argument(%n) and assembler register(%n) name
+StringTable[486]: all registers are explictly used, can't color virtual '%u' registers
+StringTable[487]: parameter count to AltiVec intrinsic is x, expected y
+StringTable[488]: invalid parameter to AltiVec intrinsic '%u',
+%u( %t ) is not allowed
+StringTable[489]: invalid parameters to AltiVec intrinsic '%u',
+%u( %t,%t ) is not allowed
+StringTable[490]: invalid parameters to AltiVec intrinsic '%u',
+%u( %t, %t, %t ) is not allowed
+StringTable[491]: invalid parameter type to AltiVec intrinsic '%u'
+StringTable[492]: invalid constant parameter to AltiVec intrinsic '%u',
+'%u' only accepts %i-bit (0-%i) constants
+StringTable[493]: label displacement is too far (must be within 32K bytes)
+StringTable[494]: too few initializers for '%t'
+StringTable[495]: too many initializers for '%t'
+StringTable[496]: illegal initialization of AltiVec vector data
+StringTable[497]: out of range for legal initialization of Altivec '%t'
+StringTable[498]: illegal initialization or cast of AltiVec vector data
+StringTable[499]: use of AltiVec Model requires AltiVec-capable scheduler
+StringTable[500]: can't allocate AltiVec stack pointer, all registers already allocated (try optimize level 1 and higher)
+StringTable[501]: '%u' register not applicable to this processor
+StringTable[502]: only difference expressions is allowed on objects (%u %u %u)
+StringTable[503]: '%u' expressions is not allowed on an object (only %u +/- constant expression is allowed)
+StringTable[504]: '%u' operator is not allowed with an object (only constant + %u is allowed)
+StringTable[505]: only 2 objects are allowed in assembler expressions (%u, %u, %u)
+StringTable[506]: illegal object reference in constant expression (%u)
+StringTable[507]: illegal use of object difference (%u-%u)
+StringTable[508]: illegal can't mix labels and objects in expression (%u-%u)
+StringTable[509]: illegal use of label (%u), can only use label differance in this context
+StringTable[510]: illegal expression only one of {ha16, hi16, lo16, @h, @ha, @l} is allowed
+StringTable[511]: illegal use of register pair (%u) use %u@hiword or %u@loword
+StringTable[512]: cannot redefine uninitialized data into an initialized section when pooled data is on
+StringTable[513]: identifier '%n' has already been defined in the '%n' section
+StringTable[514]: floating point type was checked in %u at line %i
+StringTable[515]: symbol '%n' would generate floating point instructions
+StringTable[516]: processor settings don't support hardware floating point instructions
+StringTable[517]: invalid operand values: %i must be >= %i
+StringTable[518]: invalid operand values: %i + %i must be <= 32
+StringTable[519]: pragma section expected valid %u addressing mode
+StringTable[520]: pragma section expected unquoted %u addressing mode
+StringTable[521]: pragma section expected %u
+StringTable[522]: pragma section expected unquoted object type; found "%u"
+StringTable[523]: pragma section expected an unquoted identifier for address mode; found "%u"
+StringTable[524]: invalid section name '%u'
+StringTable[525]: initialized sections must have uniquely named uninitialized data sections;
+'%u' is already defined for another section
+StringTable[526]: 'sda_rel' addressing mode can only be used with the PPC EABI defined small data sections
+StringTable[527]: only use the initialized section name to refer to the section
+'%u' is the name of an uninitialized data section
+StringTable[528]: section '%u' already has uninitialized data section '%u'
+StringTable[529]: sections used for data must have an uninitialized data section
+StringTable[530]: section '%u' must have an uninitialized data section for object '%n'
+StringTable[531]: unknown section name '%u'
+StringTable[532]: pragma section expected a quoted section name
+StringTable[533]: '%u' parameter for pragma section is out of order
+StringTable[534]: '%u' parameter for pragma section is repeated
+StringTable[535]: unknown parameter '%u' for pragma section
+StringTable[536]: '%u' is only valid for '%u' addressing mode
+StringTable[537]: pragma section expected an object type or access permission and/or a quoted section name
+StringTable[538]: unknown or possibly out of order parameter '%u' for pragma section
+StringTable[539]: pragma section expected a quoted uninitialized section name
+or the unquoted identifiers 'data_mode' or 'code_mode'
+StringTable[540]: '%u' is ignored when it occurs within a function
+StringTable[541]: '%u' object '%n' is being put into section '%u' with access permission '%u';
+section's access permission will be changed to '%u'
+StringTable[542]: pragma section expected an unquoted access permission; found "%u"
+StringTable[543]: pragma section expected object type or access permission, but not both
+StringTable[544]: pragma rel109_offset expected an integer (0, 1, 2 or 3)
+StringTable[545]: pragma function_align expected an integer (4, 8, 16, 32, 64 or 128)
+StringTable[546]: address part of section name '%u' is allowed 1 - 8 hexidecimal digits
+StringTable[547]: interrupt function '%o' is bigger than 256 bytes (%i bytes big)
+StringTable[548]: too many #pragma section directives (max is %i)
+StringTable[549]: EPPC Processor preference panel is incompatible with this compiler
+StringTable[550]: illegal forward label or undefined symbol (%u) in constant expression
+StringTable[551]: %u was not assigned to a %u register (try using register qualifier)
+StringTable[552]: @hiword can't be used in this context (only works on variables not registers)
+StringTable[553]: floating point constants are not allowed if floating point is off.
+StringTable[554]: possible unintended use of address of (%u) in constant expression
+Use 'la' or 'las' to load addresses
+StringTable[555]: expected a register name here.
+StringTable[556]: out of registers for local variable %u
+StringTable[557]: function level assembler can not be inlined, use 'asm { instr... }' blocks inside a inline function.
+StringTable[558]: PCode cannot access the global variable %o, because it has been stored in the TOC.
+StringTable[559]: PCode cannot use long long.
+StringTable[560]: PCode function cannot take a variable argument list.
+StringTable[561]: illegal use of label or constant in a absolute branch
+StringTable[562]: volatile passed to vec_ld* or vec_st*
+StringTable[563]: Mach-O can't load a float constant directly. Use addis rX,picbase,ha16(float_const_var); lfd fX,lo16(float_const_var)(rX)
+StringTable[564]: Illegal addressing mode (32 bit). Try constructing an address using addis rX,rpic,ha16(var); lwz rX,lo16(var)(rX)
+StringTable[565]: %o cannot be an interrupt function with variable argument list
+StringTable[566]: incoming parameter area > 32K
+StringTable[567]: outgoing parameter area > 32K
+StringTable[568]: NA, no longer used; local data > 32K; try using #pragma large_frames on
+StringTable[569]: when there is a frame, it is best to have frfree just before the %u
+StringTable[570]: when there is a frame, it is best to have only one explicit exit
+(try branching to a label just before the frfree)
+StringTable[571]: when there is a frame, it is generally best to have a %u just after the frfree
+StringTable[572]: frfree directive is only allowed at the end of a function. To exit from the middle of a function, branch to a frfree at the end.
+StringTable[573]: Mach-O 'pic' model is only supported if 'dynamic' is on.
+StringTable[574]: function '%u' contains no instructions
+StringTable[575]: pragma min_struct_alignment expected an integer (4, 8, 16, 32, 64 or 128)
+StringTable[576]: correct syntax is __declspec(section 'sect_name') where sect_name is a quoted string
+StringTable[577]: global register variable declarations are ignored when they occur within a function
+StringTable[578]: global register variable declarations must be variables of storage class static, extern or register
+StringTable[579]: global register variable declaration syntax is storage_class type var_name asm ("xn");
+storage_class is extern, static or register, "xn" is quoted, 'x' is r,f or v,
+and 'n' is a nonvolatile register number
+StringTable[580]: global register variable declaration supports %i registers beginning with %u%i for this register class
+StringTable[581]: global register variable assigned to '%u%i' can not be reassigned to '%u%i'
+StringTable[582]: global register variable '%n' already is assigned to '%u%i'
+StringTable[583]: gaps between assigned global register variables (nothing at '%u%i') are not permitted
+StringTable[584]: global register variable is assigned to register class '%u' but should be '%u'
+StringTable[585]: global register variables can only use single registers (cannot be long longs or software fp doubles)
+StringTable[586]: global register variable '%o' cannot be assigned %u%i because that register has already been assigned to something else
+StringTable[587]: global and static register variables cannot have the same name: '%n'
+StringTable[588]: global register variables must be variables; '%n' isn't a variable
+StringTable[589]: type cannot be made into a global register variable;
+only scalers, doubles, floats and vectors are supported
+StringTable[590]: cannot declare global register variables after code has been generated
+StringTable[591]: correct syntax is __declspec(interrupt flags) where optional flags can be 1 or more of following space separated list:
+enable SRR DAR DSISR save_fprs save_altivec save_spe nowarn noncritical|critical|machine|debug
+StringTable[592]: pragma processor expected an integer, such as 603, or a string (no quotes), such as 603e
+StringTable[593]: pragma prepare_compress is ignored if an appropriate processor is not passed to pragma processor
+StringTable[594]: intrinsic %u argument %i is not constant
+StringTable[595]: intrinsic %u argument %i constant value value %i is not in range %i..%i using %i
+StringTable[596]: inline asm instruction '%u', defines reserved register r%i.
+Mixing assembler and C code depends on the inline assembler not modifying the reserved registers directly.
+Use function level assembler if you need to directly modify the reserved registers.
+StringTable[597]: the gap at '%u%i' cannot be filled because that register has already been assigned to something else
+StringTable[598]: '%n' is a 32-bit mode instruction
+StringTable[599]: '%n' is a 64-bit mode instruction
+StringTable[600]: sync() has changed to msync() read book E to understand the differences (while sync() still works msync() does not have this message)
+StringTable[601]: out of range shift value (%i) will be masked to (%i)
+StringTable[602]: function prototype requires an ellipsis for variable argument macro va_start
+StringTable[603]: illegal use of frame pointer (r%i) in statement level assembler
+StringTable[604]: use pragma %u after pragma prepare_compress
+StringTable[605]: branch instruction needs to branch %i but range is %i ... %i
+StringTable[606]: currently cannot mix compressed and uncompressed executable sections in the same process image
+StringTable[607]: function consumes too many registers; use global optimization level >= 1 and/or reduce inlining 
+StringTable[608]: AltiVec PIM does not allow '{'..'}' for initialization of vectors
+StringTable[609]: pragma function_align expected a power of 2 instead got %i
+StringTable[610]: align directive value (%i) is larger than the current function alignment which is %i using %i
+StringTable[611]: pragma function_align expected an integer (4, 8, 16, 32, 64, 128, 512, 1024, 2048, 4096 or 8192)
+StringTable[612]: %u was assigned to the wrong class of register %u expected %u
+StringTable[613]: special license is required for e500 and Zen processors
+StringTable[614]: floating point settings don't support floating point types, registers or instructions
+StringTable[615]: %o can not be assigned to a %u register (it is an array or structure, or had it's address taken)
+StringTable[616]: processor %n is not supported by the current set of licenses. Please contact <license@metrowerks.com> for licensing needs
+StringTable[617]: expected a inline assembler directive.
+StringTable[618]: expected a modifier like @h, @ha, @l, @loword or @hiword.
+StringTable[619]: PPC Optimizer computes it would need more than %iM of memory to compute memory def-use chains.  Some optimizations disabled
+Limit currently set to %iM
+Increase limit using '#pragma ppc_opt_defuse_mem_limit %i'
+StringTable[620]: PPC Optimizer computes it would need more than %iM of memory to compute register def-use chains.  Key Optimizations Failed
+Limit currently set to %iM
+Increase limit using '#pragma ppc_opt_defuse_mem_limit %i'
+StringTable[621]: GCC constraint '%u' indicates writing but expression is constant
+StringTable[622]: GCC constraint '%u' is not supported at this time.
+StringTable[623]: NOTUSED %i arguments to gcc style inline assember exceeded maximum number supported (%i)
+StringTable[624]: NOTUSED %i alternates in a single argument to gcc style inline assember exceeded maximum number supported (%i)
+StringTable[625]: NOTUSED GCC style assembler processing could not match any of the constraints in '%u'.
+StringTable[626]: Use of '*' in statement level assembler is not allowed
+Please use a label
+StringTable[627]: Use of r0 as a base register of an update form load or store instruction is illegal
+StringTable[628]: Use of the output register %n as the base register of an load and update instruction is illegal
+StringTable[629]: too many __declspec(interrupt ...) or __declspec(section ...) directives
+StringTable[630]: Wrong use of '%u' instructions in inline assembly when profiling is enabled can cause infinite loops.
+StringTable[631]: __declspec(section "%u") and __declspec(section "%u") were used on the same object
+StringTable[632]: the precompiled header used by this source file needs to be rebuilt
+StringTable[633]: Do not enable both SPFP and DPFP either through passing compiler options or #pragma e500_floatingpoint and #pragma e500v2_floatingpoint.
+StringTable[634]: Use of SPFP or #pragma e500_floatingpoint with the current processor will result in undefined behavior.
+StringTable[635]: Use of DPFP or #pragma e500v2_floatingpoint with the current processor will result in undefined behavior.
+StringTable[636]: expected a register, but object %u is not a auto variable or has had it address taken
+StringTable[637]: expected a memory object, but object %u has been used already in a way which requires it to be in a register
+StringTable[638]: Inline assembler processor set to %u, mnemonic %u has multiple definitions enabled for processors %u and %u
+StringTable[639]: currently cannot mix VLE and non-VLE executable sections in the same process image
+StringTable[640]: Instruction '%u' can not be translated from Classic PPC to VLE PPC.  Please use a suitable VLE instruction.
+StringTable[641]: Can not translate to VLE instruction '%u' because cr%i is out of range (cr0 .. cr3).
+StringTable[642]: Instruction '%u' supports condition registers cr0 .. cr3 (BI field values 0 .. 15) but found cr%i (BI field value %i).
+StringTable[643]: Instruction '%u' can not be translated from Classic PPC to VLE PPC.
+VLE instruction %u supports condition registers cr0 .. cr3 (BI field values 0 .. 15) but found cr%i (BI field value %i).
+StringTable[644]: Instruction '%u' can not be translated from Classic PPC to VLE PPC.
+VLE instruction %u supports BO field values 0 .. 3 (found value %i)
+and condition registers cr0 .. cr3 (BI field values 0 .. 15) (found cr%i (BI field value %i)).
+StringTable[645]: Instruction '%u' can not be translated from Classic PPC to VLE PPC because it has the absolute bit set.
+StringTable[646]: Instruction '%u' can not be translated from Classic PPC to VLE PPC because cr%i is out of range (cr0 .. cr3).
+StringTable[647]: Invalid instruction form - the base register cannot be included in the list of registers to be loaded
+StringTable[648]: Instruction '%u' supports condition registers cr0 .. cr3 but found cr%i.
+StringTable[649]: not used
+
+
+Symbols
+=======
+
+
