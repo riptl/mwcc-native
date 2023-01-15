@@ -1,1 +1,3 @@
-parts/
+out/
+env/
+*.exe
