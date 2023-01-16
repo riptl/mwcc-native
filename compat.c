@@ -100,16 +100,6 @@ KERNEL32_DeleteCriticalSection( void * lp_critical_section ) {
   printf( "KERNEL32_DeleteCriticalSection(%p)\n", lp_critical_section );
 }
 
-__attribute__((stdcall)) void
-KERNEL32_EnterCriticalSection( void * lp_critical_section ) {
-  printf( "KERNEL32_EnterCriticalSection(%p)\n", lp_critical_section );
-}
-
-__attribute__((stdcall)) void
-KERNEL32_LeaveCriticalSection( void * lp_critical_section ) {
-  printf( "KERNEL32_LeaveCriticalSection(%p)\n", lp_critical_section );
-}
-
 __attribute__((stdcall)) uint32_t
 KERNEL32_FindFirstFileA( const char * lp_file_name,
                          void *       lp_find_file_data ) {
@@ -846,51 +836,29 @@ WS2_32_6d43f8( uint32_t s,
   return 0;
 }
 
+__attribute__((stdcall)) void
+KERNEL32_EnterCriticalSection( void * lp_critical_section ) {
+  printf( "KERNEL32_EnterCriticalSection(%p)\n", lp_critical_section );
+}
+
+__attribute__((stdcall)) void
+KERNEL32_LeaveCriticalSection( void * lp_critical_section ) {
+  printf( "KERNEL32_LeaveCriticalSection(%p)\n", lp_critical_section );
+}
+
 int
 main( void ) {
   size_t orig_text_start   = 0x401000;
-  size_t orig_FUN_00418130 = 0x418130;
+  size_t orig_FUN_004031b0 = 0x4031b0;
 
-  __attribute__((cdecl)) void(*FUN_00418130)() = (void(*)())(__pe_text_start + (orig_FUN_00418130-orig_text_start));
   printf( "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
 
   printf( "__pe_text_start       = %p\n", __pe_text_start       ); // 0x804820f
   printf( "__pe_data_start       = %p\n", __pe_data_start       ); // 0x82a7024
   printf( "__pe_data_idata_start = %p\n", __pe_data_idata_start ); // 0x830d424
 
-  printf( "FUN_00418130    = %p\n", FUN_00418130    );
-  printf( "*FUN_00418130   = %02x %02x %02x %02x %02x %02x %02x %02x\n"
-          "                  %02x %02x %02x %02x %02x %02x %02x %02x\n",
-          ((uint8_t*)FUN_00418130)[0],
-          ((uint8_t*)FUN_00418130)[1],
-          ((uint8_t*)FUN_00418130)[2],
-          ((uint8_t*)FUN_00418130)[3],
-          ((uint8_t*)FUN_00418130)[4],
-          ((uint8_t*)FUN_00418130)[5],
-          ((uint8_t*)FUN_00418130)[6],
-          ((uint8_t*)FUN_00418130)[7],
-          ((uint8_t*)FUN_00418130)[8],
-          ((uint8_t*)FUN_00418130)[9],
-          ((uint8_t*)FUN_00418130)[10],
-          ((uint8_t*)FUN_00418130)[11],
-          ((uint8_t*)FUN_00418130)[12],
-          ((uint8_t*)FUN_00418130)[13],
-          ((uint8_t*)FUN_00418130)[14],
-          ((uint8_t*)FUN_00418130)[15] );
+  void (* FUN_004031b0)( void ) = (void *)( orig_FUN_004031b0 - orig_text_start + __pe_text_start );
+  FUN_004031b0();
 
-  uint32_t IAT_KERNEL32_GetStdHandle = *((uint32_t *)(FUN_00418130+8));
-  printf( "IATEntry KERNEL32.DLL!GetStdHandle = %p\n"
-          "         offset from section start = %p\n",
-          IAT_KERNEL32_GetStdHandle,
-          IAT_KERNEL32_GetStdHandle - (size_t)__pe_data_idata_start );
-
-  printf( "KERNEL32!GetStdHandle (IAT)  = %p\n"
-          "KERNEL32!GetStdHandle (real) = %p\n"
-          "                        diff = %#x\n",
-          *(uint32_t *)(IAT_KERNEL32_GetStdHandle),
-          (uint32_t)KERNEL32_GetStdHandle,
-          *(uint32_t *)(IAT_KERNEL32_GetStdHandle) - (uint32_t)KERNEL32_GetStdHandle );
-
-  puts( "Calling FUN_00418130" );
-  FUN_00418130();
+  puts( "It works!" );
 }

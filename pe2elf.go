@@ -286,9 +286,11 @@ func (e *elfWriter) addSym(sym elf.Sym32, name string) int {
 // The relocation table contains a list of these sites.
 // Because the site already contains the target address, no further info is required in the reloc itself.
 //
-// In ELF however, sites usually contain dummy values (e.g. FFFFFFFF).
+// ELF is a bit more flexible, however.
 // Patching works by creating a symbol that points at or before the target,
-// and then having the reloc associate a site with that symbol (and an optional addend).
+// and then having the reloc associate a site with that symbol.
+// An addend, which is sourced from the original site or `r_addend`,
+// is added to the symbol's address to get the final target address.
 //
 // We don't have any actual symbols, so we use the start of the target's as the symbol,
 // and store the offset between the target and the symbol in the addend field.
