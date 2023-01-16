@@ -4,9 +4,25 @@
 
 #define ERROR_ACCESS_DENIED 5
 
+extern char __pe_text_start[];
+
 int
 main( void ) {
-  puts( "wtf" );
+  __attribute__((cdecl)) void(*FUN_00418130)() = (void(*)())(__pe_text_start + 0x17130);
+  printf( "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
+  printf( "__pe_text_start = %p\n", __pe_text_start );
+  printf( "FUN_00418130    = %p\n", FUN_00418130    );
+  printf( "*FUN_00418130   = %02x %02x %02x %02x %02x %02x %02x %02x\n",
+          ((uint8_t*)FUN_00418130)[0],
+          ((uint8_t*)FUN_00418130)[1],
+          ((uint8_t*)FUN_00418130)[2],
+          ((uint8_t*)FUN_00418130)[3],
+          ((uint8_t*)FUN_00418130)[4],
+          ((uint8_t*)FUN_00418130)[5],
+          ((uint8_t*)FUN_00418130)[6],
+          ((uint8_t*)FUN_00418130)[7] );
+  puts( "Calling FUN_00418130" );
+  FUN_00418130();
 }
 
 __attribute__((stdcall)) int32_t

@@ -1,3 +1,4 @@
 out/
 env/
 *.exe
+i686-linux-musl-native/

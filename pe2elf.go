@@ -15,9 +15,12 @@ import (
 	"strings"
 )
 
+var verbose bool
+
 func main() {
-	inPath := flag.String("in", "", "PE input file")
-	outPath := flag.String("out", "out.elf", "ELF output file")
+	inPath := flag.String("i", "", "PE input file")
+	outPath := flag.String("o", "out.elf", "ELF output file")
+	flag.BoolVar(&verbose, "v", false, "Verbose output")
 	flag.Parse()
 
 	log.Default().SetFlags(0)
@@ -52,7 +55,7 @@ func main() {
 	log.Printf("Text vaddr:   %#x", baseVaddr+peText.VirtualAddress)
 	if err = writer.copySection(rawText, ".text", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
-		Flags: uint32(elf.SHF_ALLOC) | uint32(elf.SHF_EXECINSTR),
+		Flags: uint32(elf.SHF_ALLOC | elf.SHF_EXECINSTR),
 		Addr:  baseVaddr + peText.VirtualAddress,
 	}); err != nil {
 		log.Fatal(err)
@@ -142,13 +145,18 @@ func getString(section []byte, start int) (string, bool) {
 	return "", false
 }
 
+type symkey struct {
+	shndx uint32
+	value uint32
+}
+
 type elfWriter struct {
 	hdr      elf.Header32
 	wr       *os.File
 	sections []elf.Section32
 	symtab   []elf.Sym32
-	symmap   map[uint32]int      // vaddr -> index in symtab
-	relocs   map[int][]elf.Rel32 // section index -> relocs
+	symmap   map[symkey]int       // (shndx, vaddr) -> index in symtab
+	relocs   map[int][]elf.Rela32 // section index -> relocs
 
 	shstrtab bytes.Buffer
 	strtab   bytes.Buffer
@@ -173,8 +181,8 @@ func (e *elfWriter) init(wr *os.File) error {
 	}
 	e.sections = []elf.Section32{{}}
 	e.symtab = []elf.Sym32{{}}
-	e.symmap = make(map[uint32]int)
-	e.relocs = make(map[int][]elf.Rel32)
+	e.symmap = make(map[symkey]int)
+	e.relocs = make(map[int][]elf.Rela32)
 	return binary.Write(wr, binary.LittleEndian, &e.hdr)
 }
 
@@ -244,7 +252,11 @@ func (e *elfWriter) addStr(s string) uint32 {
 
 // addSym adds a symbol to the symbol table.
 func (e *elfWriter) addSym(sym elf.Sym32, name string) int {
-	if symndx, ok := e.symmap[sym.Value]; ok {
+	key := symkey{
+		shndx: uint32(sym.Shndx),
+		value: sym.Value,
+	}
+	if symndx, ok := e.symmap[key]; ok {
 		return symndx
 	}
 	if name != "" {
@@ -252,10 +264,28 @@ func (e *elfWriter) addSym(sym elf.Sym32, name string) int {
 	}
 	ndx := len(e.symtab)
 	e.symtab = append(e.symtab, sym)
-	e.symmap[sym.Value] = ndx
+	e.symmap[key] = ndx
 	return ndx
 }
 
+// addRelocs parses PE relocations and emits ELF relocations.
+//
+// All of this only covers relocations of absolute 32-bit virtual addresses, i.e. R_386_32.
+//
+// Some terminology:
+// - Site: the address that needs to be patched
+// - Target: the (virtual) address of the symbol that the site refers to
+//
+// In PE, this works by simply having the site refer to the target virtual address.
+// The relocation table contains a list of these sites.
+// Because the site already contains the target address, no further info is required in the reloc itself.
+//
+// In ELF however, sites usually contain dummy values (e.g. FFFFFFFF).
+// Patching works by creating a symbol that points at or before the target,
+// and then having the reloc associate a site with that symbol (and an optional addend).
+//
+// We don't have any actual symbols, so we use the start of the target's as the symbol,
+// and store the offset between the target and the symbol in the addend field.
 func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 	rd := s.Open()
 	for {
@@ -288,48 +318,68 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 				log.Printf("unsupported reloc type: " + strconv.Itoa(int(relocType)))
 				continue
 			}
-			relocVA := pageVA + uint32(relocOffset)
+			siteVaddr := pageVA + uint32(relocOffset)
 
-			// Detect section of reloc
+			// Detect section of reloc site
+			siteShndx := -1
+			for i, s := range e.sections {
+				if s.Addr <= siteVaddr && siteVaddr < s.Addr+s.Size {
+					siteShndx = i
+					break
+				}
+			}
+			if siteShndx < 0 {
+				log.Printf("Reloc site of any ELF section (type=%d, vaddr=%#x)", relocType, siteVaddr)
+				continue
+			}
+
+			// Read original target address
+			sitePaddr := e.sections[siteShndx].Off + siteVaddr - e.sections[siteShndx].Addr
+			var origAddrBuf [4]byte
+			if _, err := e.wr.ReadAt(origAddrBuf[:], int64(sitePaddr)); err != nil {
+				log.Fatal(err)
+			}
+			targetVaddr := binary.LittleEndian.Uint32(origAddrBuf[:])
+
+			// Detect section of reloc target
 			targetShndx := -1
 			for i, s := range e.sections {
-				if s.Addr <= relocVA && relocVA < s.Addr+s.Size {
+				if s.Addr <= targetVaddr && targetVaddr < s.Addr+s.Size {
 					targetShndx = i
 					break
 				}
 			}
 			if targetShndx < 0 {
-				log.Printf("Reloc outside of any ELF section (type=%d, vaddr=%#x)", relocType, relocVA)
+				log.Printf("Reloc target outside of any ELF section (type=%d, vaddr=%#x)", relocType, targetVaddr)
 				continue
 			}
 
-			// Read original target address
-			sitePaddr := e.sections[targetShndx].Off + relocVA - e.sections[targetShndx].Addr
-			var origAddrBuf [4]byte
-			if _, err := e.wr.ReadAt(origAddrBuf[:], int64(sitePaddr)); err != nil {
-				log.Fatal(err)
-			}
-			origAddr := binary.LittleEndian.Uint32(origAddrBuf[:])
-
-			// Create symbol for original target address
+			// Create symbol for start of section
+			targetShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[targetShndx].Name))
 			targetSymIdx := e.addSym(elf.Sym32{
 				Name:  0,
-				Value: origAddr - e.sections[targetShndx].Addr,
+				Value: 0,
 				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
 				Shndx: uint16(targetShndx),
 				Other: uint8(elf.STV_DEFAULT),
 				Size:  0,
-			}, "")
+			}, "__pe_"+strings.TrimLeft(targetShName, ".")+"_start")
 
 			// Create relocation entry
-			e.relocs[targetShndx] = append(e.relocs[targetShndx], elf.Rel32{
-				Off:  relocVA - e.sections[targetShndx].Addr,
-				Info: elf.R_INFO32(uint32(targetSymIdx), uint32(elf.R_386_32)),
+			e.relocs[siteShndx] = append(e.relocs[siteShndx], elf.Rela32{
+				Off:    siteVaddr - e.sections[siteShndx].Addr,
+				Info:   elf.R_INFO32(uint32(targetSymIdx), uint32(elf.R_386_32)),
+				Addend: int32(targetVaddr - e.sections[targetShndx].Addr),
 			})
 
-			//targetShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[targetShndx].Name))
-			//log.Printf("Reloc type=%d site_section=%s site=%#x target=%#x",
-			//	relocType, targetShName, relocVA, origAddr)
+			if verbose {
+				siteShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[siteShndx].Name))
+				log.Printf("Reloc type=%d %#x (%s+%#x) -> %#x (%s+%#x)",
+					relocType,
+					siteVaddr, siteShName, siteVaddr-e.sections[siteShndx].Addr,
+					targetVaddr, targetShName, targetVaddr-e.sections[targetShndx].Addr,
+				)
+			}
 		}
 	}
 }
@@ -457,7 +507,7 @@ func (e *elfWriter) addImports(peFile *pe.File, peOpt *pe.OptionalHeader32, idat
 				Shndx: uint16(elf.SHN_UNDEF),
 			}, symName)
 
-			e.relocs[idataNdx] = append(e.relocs[idataNdx], elf.Rel32{
+			e.relocs[idataNdx] = append(e.relocs[idataNdx], elf.Rela32{
 				Off:  targetAddr - e.sections[idataNdx].Addr,
 				Info: elf.R_INFO32(uint32(symIdx), uint32(elf.R_386_32)),
 			})
@@ -502,13 +552,13 @@ func (e *elfWriter) writeReltabs() error {
 		}
 
 		sec := elf.Section32{
-			Name:    e.addShstr(".rel" + name),
-			Type:    uint32(elf.SHT_REL),
+			Name:    e.addShstr(".rela" + name),
+			Type:    uint32(elf.SHT_RELA),
 			Off:     atStart,
 			Size:    atEnd - atStart,
 			Link:    uint32(len(e.sections) + nReltabs + 1), // .symtab follows last reloc section
 			Info:    uint32(i),
-			Entsize: uint32(binary.Size(elf.Rel32{})),
+			Entsize: uint32(binary.Size(elf.Rela32{})),
 		}
 		e.sections = append(e.sections, sec)
 	}
