@@ -31,7 +31,7 @@ This demo requires `mwcceppc.exe` version `4199_60831`.
 ```
 $ make
 go build -o out/pe2elf pe2elf.go
-./out/pe2elf -i mwcceppc.exe -o out/generated.o 2>/dev/null >/dev/null
+./out/pe2elf -i mwcceppc.exe -o out/generated.o
 ./i686-linux-musl-native/bin/gcc -static -no-pie -c -o out/compat.o compat.c
 ./i686-linux-musl-native/bin/gcc -static -no-pie -o out/mwcceppc.elf out/generated.o out/compat.o
 ```
