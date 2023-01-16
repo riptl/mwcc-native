@@ -16,8 +16,8 @@ import (
 )
 
 func main() {
-	inPath := flag.String("in", "", "Input file")
-	outPath := flag.String("out", "out.elf", "Output file")
+	inPath := flag.String("in", "", "PE input file")
+	outPath := flag.String("out", "out.elf", "ELF output file")
 	flag.Parse()
 
 	log.Default().SetFlags(0)
@@ -50,116 +50,84 @@ func main() {
 	peText := peFile.Section(".text")
 	rawText := peText.Open()
 	log.Printf("Text vaddr:   %#x", baseVaddr+peText.VirtualAddress)
-	if err := writer.writeText(rawText, peText.VirtualAddress); err != nil {
+	if err = writer.copySection(rawText, ".text", elf.Section32{
+		Type:  uint32(elf.SHT_PROGBITS),
+		Flags: uint32(elf.SHF_ALLOC) | uint32(elf.SHF_EXECINSTR),
+		Addr:  baseVaddr + peText.VirtualAddress,
+	}); err != nil {
+		log.Fatal(err)
+	}
+
+	peExc := peFile.Section(".exc")
+	rawExc := peExc.Open()
+	log.Printf("Exc vaddr:    %#x", baseVaddr+peExc.VirtualAddress)
+	if err = writer.copySection(rawExc, ".exc", elf.Section32{
+		Type:  uint32(elf.SHT_PROGBITS),
+		Flags: uint32(elf.SHF_ALLOC),
+		Addr:  baseVaddr + peExc.VirtualAddress,
+	}); err != nil {
 		log.Fatal(err)
 	}
 
 	peRodata := peFile.Section(".rdata")
 	rawRodata := peRodata.Open()
 	log.Printf("Rodata vaddr: %#x", baseVaddr+peRodata.VirtualAddress)
-	if err := writer.writeRodata(rawRodata, peRodata.VirtualAddress); err != nil {
+	if err = writer.copySection(rawRodata, ".rodata", elf.Section32{
+		Type:  uint32(elf.SHT_PROGBITS),
+		Flags: uint32(elf.SHF_ALLOC),
+		Addr:  baseVaddr + peRodata.VirtualAddress,
+	}); err != nil {
 		log.Fatal(err)
 	}
 
 	peData := peFile.Section(".data")
 	rawData := peData.Open()
 	log.Printf("Data vaddr:   %#x", baseVaddr+peData.VirtualAddress)
-	if err := writer.writeData(rawData, peData.VirtualAddress); err != nil {
+	if err = writer.copySection(rawData, ".data", elf.Section32{
+		Type:  uint32(elf.SHT_PROGBITS),
+		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
+		Addr:  baseVaddr + peData.VirtualAddress,
+	}); err != nil {
+		log.Fatal(err)
+	}
+
+	peCRT := peFile.Section(".CRT")
+	rawCRT := peCRT.Open()
+	log.Printf("CRT vaddr:    %#x", baseVaddr+peCRT.VirtualAddress)
+	if err = writer.copySection(rawCRT, ".CRT", elf.Section32{
+		Type:  uint32(elf.SHT_PROGBITS),
+		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
+		Addr:  baseVaddr + peCRT.VirtualAddress,
+	}); err != nil {
 		log.Fatal(err)
 	}
 
 	peIdata := peFile.Section(".idata")
 	rawIdata := peIdata.Open()
 	log.Printf("Idata vaddr:  %#x", baseVaddr+peIdata.VirtualAddress)
-	if err := writer.writeIdata(rawIdata, peIdata.VirtualAddress); err != nil {
+	if err = writer.copySection(rawIdata, ".idata", elf.Section32{
+		Type:  uint32(elf.SHT_PROGBITS),
+		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
+		Addr:  baseVaddr + peIdata.VirtualAddress,
+	}); err != nil {
+		log.Fatal(err)
+	}
+
+	idataNdx := len(writer.sections) - 1
+	if err = writer.addImports(peFile, peOpt, idataNdx); err != nil {
 		log.Fatal(err)
 	}
 
 	peBss := peFile.Section(".bss")
 	log.Printf("Bss vaddr:    %#x", baseVaddr+peBss.VirtualAddress)
-	writer.addBss(peBss.VirtualSize, peBss.VirtualAddress)
+	writer.addBss(peBss.VirtualSize, baseVaddr+peBss.VirtualAddress)
 
-	//peRelocs := peFile.Section(".reloc")
-	//readRelocs(peRelocs)
-
-	idd := peOpt.DataDirectory[pe.IMAGE_DIRECTORY_ENTRY_IMPORT]
-	var ds *pe.Section
-	ds = nil
-	for _, s := range peFile.Sections {
-		if s.VirtualAddress <= idd.VirtualAddress && idd.VirtualAddress < s.VirtualAddress+s.VirtualSize {
-			ds = s
-			break
-		}
-	}
-	if ds == nil {
-		log.Fatal("could not find section containing import directory table")
-	}
-	d, err := ds.Data()
-	if err != nil {
-		log.Fatal(err)
-	}
-	d = d[idd.VirtualAddress-ds.VirtualAddress:]
-
-	// start decoding the import directory
-	var imps []imp
-	var ida []pe.ImportDirectory
-	for len(d) >= 20 {
-		var dt pe.ImportDirectory
-		dt.OriginalFirstThunk = binary.LittleEndian.Uint32(d[0:4])
-		dt.TimeDateStamp = binary.LittleEndian.Uint32(d[4:8])
-		dt.ForwarderChain = binary.LittleEndian.Uint32(d[8:12])
-		dt.Name = binary.LittleEndian.Uint32(d[12:16])
-		dt.FirstThunk = binary.LittleEndian.Uint32(d[16:20])
-		d = d[20:]
-		if dt.OriginalFirstThunk == 0 {
-			break
-		}
-		ida = append(ida, dt)
-	}
-	names, _ := ds.Data()
-	dlls := make([]string, len(ida))
-	for i, dt := range ida {
-		dlls[i], _ = getString(names, int(dt.Name-ds.VirtualAddress))
-		d, _ = ds.Data()
-		// seek to OriginalFirstThunk
-		d = d[dt.OriginalFirstThunk-ds.VirtualAddress:]
-		targetAddr := baseVaddr + dt.FirstThunk
-		for len(d) > 0 {
-			va := binary.LittleEndian.Uint32(d[0:4])
-			d = d[4:]
-			if va == 0 {
-				break
-			}
-			fn, _ := getString(names, int(va-ds.VirtualAddress+2))
-			if fn == "" {
-				fn = fmt.Sprintf("%x", targetAddr)
-			}
-			imp_ := imp{
-				name:  strings.TrimSuffix(dlls[i], ".dll") + "_" + fn,
-				vaddr: targetAddr,
-			}
-			imps = append(imps, imp_)
-			log.Printf("Import at %#x %s!%s as %s", targetAddr, dlls[i], fn, imp_.name)
-			targetAddr += 4
-		}
-	}
-
-	if err := writer.writeIdataRelocs(imps, peIdata, baseVaddr); err != nil {
-		log.Fatal(err)
-	}
-
-	if err := writer.writeImportedSyms(imps); err != nil {
-		log.Fatal(err)
-	}
+	peRelocs := peFile.Section(".reloc")
+	writer.addRelocs(peRelocs, baseVaddr)
 
 	if err := writer.finish(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-type imp struct {
-	name  string
-	vaddr uint32
 }
 
 func getString(section []byte, start int) (string, bool) {
@@ -174,69 +142,19 @@ func getString(section []byte, start int) (string, bool) {
 	return "", false
 }
 
-func readRelocs(s *pe.Section) {
-	rd := s.Open()
-	for {
-		var hdr struct {
-			PageRVA   uint32
-			BlockSize uint32
-		}
-		if err := binary.Read(rd, binary.LittleEndian, &hdr); err != nil {
-			if err == io.EOF {
-				break
-			}
-			log.Fatal(err)
-		}
-		if hdr.PageRVA == 0 {
-			break
-		}
-		log.Printf("Reloc block: %#x", hdr.PageRVA)
-		for i := uint32(0); i < hdr.BlockSize-8; i += 2 {
-			var reloc uint16
-			if err := binary.Read(rd, binary.LittleEndian, &reloc); err != nil {
-				log.Fatal(err)
-			}
-			if reloc == 0 {
-				break
-			}
-			relocType := reloc >> 12
-			relocOffset := reloc & 0xfff
-			if relocType != 3 {
-				log.Printf("unsupported reloc type: " + strconv.Itoa(int(relocType)))
-				continue
-			}
-			log.Printf("Reloc (%d): %#x", relocType, relocOffset)
-		}
-	}
-}
-
 type elfWriter struct {
 	hdr      elf.Header32
-	wr       io.ReadWriteSeeker
+	wr       *os.File
 	sections []elf.Section32
+	symtab   []elf.Sym32
+	symmap   map[uint32]int      // vaddr -> index in symtab
+	relocs   map[int][]elf.Rel32 // section index -> relocs
 
 	shstrtab bytes.Buffer
 	strtab   bytes.Buffer
 }
 
-func (e *elfWriter) pos() uint32 {
-	x, err := e.wr.Seek(0, io.SeekCurrent)
-	if err != nil {
-		panic(err)
-	}
-	return uint32(x)
-}
-
-func (e *elfWriter) align(n uint32) error {
-	pos := e.pos()
-	if pos%n != 0 {
-		_, err := e.wr.Seek(int64(n-(pos%n)), io.SeekCurrent)
-		return err
-	}
-	return nil
-}
-
-func (e *elfWriter) init(wr io.ReadWriteSeeker) error {
+func (e *elfWriter) init(wr *os.File) error {
 	e.wr = wr
 	e.strtab.WriteByte(0)
 	e.shstrtab.WriteByte(0)
@@ -254,39 +172,27 @@ func (e *elfWriter) init(wr io.ReadWriteSeeker) error {
 		Ehsize:  uint16(binary.Size(e.hdr)),
 	}
 	e.sections = []elf.Section32{{}}
+	e.symtab = []elf.Sym32{{}}
+	e.symmap = make(map[uint32]int)
+	e.relocs = make(map[int][]elf.Rel32)
 	return binary.Write(wr, binary.LittleEndian, &e.hdr)
 }
 
-func (e *elfWriter) writeText(rd io.Reader, vaddr uint32) error {
-	return e.copySection(rd, ".text", elf.Section32{
-		Type:  uint32(elf.SHT_PROGBITS),
-		Flags: uint32(elf.SHF_ALLOC) | uint32(elf.SHF_EXECINSTR),
-		Addr:  vaddr,
-	})
+func (e *elfWriter) pos() uint32 {
+	x, err := e.wr.Seek(0, io.SeekCurrent)
+	if err != nil {
+		panic(err)
+	}
+	return uint32(x)
 }
 
-func (e *elfWriter) writeRodata(rd io.Reader, vaddr uint32) error {
-	return e.copySection(rd, ".rodata", elf.Section32{
-		Type:  uint32(elf.SHT_PROGBITS),
-		Flags: uint32(elf.SHF_ALLOC),
-		Addr:  vaddr,
-	})
-}
-
-func (e *elfWriter) writeData(rd io.Reader, vaddr uint32) error {
-	return e.copySection(rd, ".data", elf.Section32{
-		Type:  uint32(elf.SHT_PROGBITS),
-		Flags: uint32(elf.SHF_ALLOC) | uint32(elf.SHF_WRITE),
-		Addr:  vaddr,
-	})
-}
-
-func (e *elfWriter) writeIdata(rd io.Reader, vaddr uint32) error {
-	return e.copySection(rd, ".idata", elf.Section32{
-		Type:  uint32(elf.SHT_PROGBITS),
-		Flags: uint32(elf.SHF_ALLOC),
-		Addr:  vaddr,
-	})
+func (e *elfWriter) align(n uint32) error {
+	pos := e.pos()
+	if pos%n != 0 {
+		_, err := e.wr.Seek(int64(n-(pos%n)), io.SeekCurrent)
+		return err
+	}
+	return nil
 }
 
 func (e *elfWriter) addBss(size uint32, vaddr uint32) {
@@ -334,6 +240,98 @@ func (e *elfWriter) addStr(s string) uint32 {
 	e.strtab.WriteString(s)
 	e.strtab.WriteByte(0)
 	return addr
+}
+
+// addSym adds a symbol to the symbol table.
+func (e *elfWriter) addSym(sym elf.Sym32, name string) int {
+	if symndx, ok := e.symmap[sym.Value]; ok {
+		return symndx
+	}
+	if name != "" {
+		sym.Name = e.addStr(name)
+	}
+	ndx := len(e.symtab)
+	e.symtab = append(e.symtab, sym)
+	e.symmap[sym.Value] = ndx
+	return ndx
+}
+
+func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
+	rd := s.Open()
+	for {
+		var hdr struct {
+			PageRVA   uint32
+			BlockSize uint32
+		}
+		if err := binary.Read(rd, binary.LittleEndian, &hdr); err != nil {
+			if err == io.EOF {
+				break
+			}
+			log.Fatal(err)
+		}
+		if hdr.PageRVA == 0 {
+			break
+		}
+		pageVA := baseVaddr + hdr.PageRVA
+		//log.Printf("Reloc block: %#x", hdr.PageRVA)
+		for i := uint32(0); i < hdr.BlockSize-8; i += 2 {
+			var reloc uint16
+			if err := binary.Read(rd, binary.LittleEndian, &reloc); err != nil {
+				log.Fatal(err)
+			}
+			if reloc == 0 {
+				break
+			}
+			relocType := reloc >> 12
+			relocOffset := reloc & 0xfff
+			if relocType != 3 {
+				log.Printf("unsupported reloc type: " + strconv.Itoa(int(relocType)))
+				continue
+			}
+			relocVA := pageVA + uint32(relocOffset)
+
+			// Detect section of reloc
+			targetShndx := -1
+			for i, s := range e.sections {
+				if s.Addr <= relocVA && relocVA < s.Addr+s.Size {
+					targetShndx = i
+					break
+				}
+			}
+			if targetShndx < 0 {
+				log.Printf("Reloc outside of any ELF section (type=%d, vaddr=%#x)", relocType, relocVA)
+				continue
+			}
+
+			// Read original target address
+			sitePaddr := e.sections[targetShndx].Off + relocVA - e.sections[targetShndx].Addr
+			var origAddrBuf [4]byte
+			if _, err := e.wr.ReadAt(origAddrBuf[:], int64(sitePaddr)); err != nil {
+				log.Fatal(err)
+			}
+			origAddr := binary.LittleEndian.Uint32(origAddrBuf[:])
+
+			// Create symbol for original target address
+			targetSymIdx := e.addSym(elf.Sym32{
+				Name:  0,
+				Value: origAddr - e.sections[targetShndx].Addr,
+				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
+				Shndx: uint16(targetShndx),
+				Other: uint8(elf.STV_DEFAULT),
+				Size:  0,
+			}, "")
+
+			// Create relocation entry
+			e.relocs[targetShndx] = append(e.relocs[targetShndx], elf.Rel32{
+				Off:  relocVA - e.sections[targetShndx].Addr,
+				Info: elf.R_INFO32(uint32(targetSymIdx), uint32(elf.R_386_32)),
+			})
+
+			//targetShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[targetShndx].Name))
+			//log.Printf("Reloc type=%d site_section=%s site=%#x target=%#x",
+			//	relocType, targetShName, relocVA, origAddr)
+		}
+	}
 }
 
 // writeShstrtab writes the .shstrtab section (section header string table).
@@ -398,61 +396,130 @@ func (e *elfWriter) writeShtab() error {
 	return nil
 }
 
-func (e *elfWriter) writeIdataRelocs(imps []imp, idata *pe.Section, baseVaddr uint32) error {
-	atStart := e.pos()
-	buf := bufio.NewWriter(e.wr)
-	sectionVA := baseVaddr + idata.VirtualAddress
-	for i, imp := range imps {
-		// Ensure import target is within idata
-		impRVA := imp.vaddr - baseVaddr
-		if impRVA < idata.VirtualAddress || impRVA >= idata.VirtualAddress+idata.VirtualSize {
-			continue
-		}
-
-		// Write relocation
-		rel := elf.Rel32{
-			Off:  imp.vaddr - sectionVA,
-			Info: elf.R_INFO32(uint32(i), uint32(elf.R_386_32)),
-		}
-		if err := binary.Write(buf, binary.LittleEndian, &rel); err != nil {
-			return err
+func (e *elfWriter) addImports(peFile *pe.File, peOpt *pe.OptionalHeader32, idataNdx int) error {
+	idd := peOpt.DataDirectory[pe.IMAGE_DIRECTORY_ENTRY_IMPORT]
+	var ds *pe.Section
+	ds = nil
+	for _, s := range peFile.Sections {
+		if s.VirtualAddress <= idd.VirtualAddress && idd.VirtualAddress < s.VirtualAddress+s.VirtualSize {
+			ds = s
+			break
 		}
 	}
-	if err := buf.Flush(); err != nil {
+	if ds == nil {
+		return fmt.Errorf("could not find section containing import directory table")
+	}
+	d, err := ds.Data()
+	if err != nil {
 		return err
 	}
-	atEnd := e.pos()
+	d = d[idd.VirtualAddress-ds.VirtualAddress:]
 
-	// Write section header
-	e.sections = append(e.sections, elf.Section32{
-		Name:    e.addShstr(".rel.idata"),
-		Type:    uint32(elf.SHT_REL),
-		Off:     atStart,
-		Size:    atEnd - atStart,
-		Link:    uint32(len(e.sections) + 1), // .symtab
-		Info:    uint32(len(e.sections) - 2), // .idata
-		Entsize: uint32(binary.Size(elf.Rel32{})),
-	})
+	// start decoding the import directory
+	var ida []pe.ImportDirectory
+	for len(d) >= 20 {
+		var dt pe.ImportDirectory
+		dt.OriginalFirstThunk = binary.LittleEndian.Uint32(d[0:4])
+		dt.TimeDateStamp = binary.LittleEndian.Uint32(d[4:8])
+		dt.ForwarderChain = binary.LittleEndian.Uint32(d[8:12])
+		dt.Name = binary.LittleEndian.Uint32(d[12:16])
+		dt.FirstThunk = binary.LittleEndian.Uint32(d[16:20])
+		d = d[20:]
+		if dt.OriginalFirstThunk == 0 {
+			break
+		}
+		ida = append(ida, dt)
+	}
+	names, _ := ds.Data()
+	dlls := make([]string, len(ida))
+	for i, dt := range ida {
+		dlls[i], _ = getString(names, int(dt.Name-ds.VirtualAddress))
+		d, _ = ds.Data()
+		// seek to OriginalFirstThunk
+		d = d[dt.OriginalFirstThunk-ds.VirtualAddress:]
+		targetAddr := peOpt.ImageBase + dt.FirstThunk
+		for len(d) > 0 {
+			va := binary.LittleEndian.Uint32(d[0:4])
+			d = d[4:]
+			if va == 0 {
+				break
+			}
+			fn, _ := getString(names, int(va-ds.VirtualAddress+2))
+			if fn == "" {
+				fn = fmt.Sprintf("%x", targetAddr)
+			}
+
+			symName := strings.TrimSuffix(dlls[i], ".dll") + "_" + fn
+			symIdx := e.addSym(elf.Sym32{
+				Value: targetAddr - e.sections[idataNdx].Addr,
+				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
+				Other: uint8(elf.STV_DEFAULT),
+				Shndx: uint16(elf.SHN_UNDEF),
+			}, symName)
+
+			e.relocs[idataNdx] = append(e.relocs[idataNdx], elf.Rel32{
+				Off:  targetAddr - e.sections[idataNdx].Addr,
+				Info: elf.R_INFO32(uint32(symIdx), uint32(elf.R_386_32)),
+			})
+
+			log.Printf("Import at %#x %s!%s as %s", targetAddr, dlls[i], fn, symName)
+			targetAddr += 4
+		}
+	}
+
 	return nil
 }
 
-func (e *elfWriter) writeImportedSyms(imps []imp) error {
-	atStart := e.pos()
-	buf := bufio.NewWriter(e.wr)
-	if err := binary.Write(buf, binary.LittleEndian, &elf.Sym32{}); err != nil {
-		return err
-	}
-	for _, imp := range imps {
-		sym := elf.Sym32{
-			Name:  e.addStr(imp.name),
-			Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
-			Other: uint8(elf.STV_DEFAULT),
-			Shndx: uint16(elf.SHN_UNDEF),
+func (e *elfWriter) writeReltabs() error {
+	// Count number of reloc sections
+	nReltabs := 0
+	for i := 0; i < len(e.sections); i++ {
+		if len(e.relocs[i]) > 0 {
+			nReltabs++
 		}
-		if err := binary.Write(buf, binary.LittleEndian, &sym); err != nil {
+	}
+
+	// Write reloc sections
+	buf := bufio.NewWriter(e.wr)
+	for i := 0; i < len(e.sections); i++ {
+		if len(e.relocs[i]) == 0 {
+			continue
+		}
+		nReltabs--
+		atStart := e.pos()
+		if err := binary.Write(buf, binary.LittleEndian, e.relocs[i]); err != nil {
 			return err
 		}
+		if err := buf.Flush(); err != nil {
+			return err
+		}
+		atEnd := e.pos()
+
+		// Get target section name
+		name, _ := getString(e.shstrtab.Bytes(), int(e.sections[i].Name))
+		if name == "" {
+			panic("cannot find section name")
+		}
+
+		sec := elf.Section32{
+			Name:    e.addShstr(".rel" + name),
+			Type:    uint32(elf.SHT_REL),
+			Off:     atStart,
+			Size:    atEnd - atStart,
+			Link:    uint32(len(e.sections) + nReltabs + 1), // .symtab follows last reloc section
+			Info:    uint32(i),
+			Entsize: uint32(binary.Size(elf.Rel32{})),
+		}
+		e.sections = append(e.sections, sec)
 	}
+
+	return nil
+}
+
+func (e *elfWriter) writeSymtab() error {
+	atStart := e.pos()
+	buf := bufio.NewWriter(e.wr)
+	binary.Write(buf, binary.LittleEndian, e.symtab)
 	if err := buf.Flush(); err != nil {
 		return err
 	}
@@ -473,6 +540,12 @@ func (e *elfWriter) writeImportedSyms(imps []imp) error {
 }
 
 func (e *elfWriter) finish() error {
+	if err := e.writeReltabs(); err != nil {
+		return err
+	}
+	if err := e.writeSymtab(); err != nil {
+		return err
+	}
 	if err := e.writeStrtab(); err != nil {
 		return err
 	}
