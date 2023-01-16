@@ -5,25 +5,8 @@
 #define ERROR_ACCESS_DENIED 5
 
 extern char __pe_text_start[];
-
-int
-main( void ) {
-  __attribute__((cdecl)) void(*FUN_00418130)() = (void(*)())(__pe_text_start + 0x17130);
-  printf( "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
-  printf( "__pe_text_start = %p\n", __pe_text_start );
-  printf( "FUN_00418130    = %p\n", FUN_00418130    );
-  printf( "*FUN_00418130   = %02x %02x %02x %02x %02x %02x %02x %02x\n",
-          ((uint8_t*)FUN_00418130)[0],
-          ((uint8_t*)FUN_00418130)[1],
-          ((uint8_t*)FUN_00418130)[2],
-          ((uint8_t*)FUN_00418130)[3],
-          ((uint8_t*)FUN_00418130)[4],
-          ((uint8_t*)FUN_00418130)[5],
-          ((uint8_t*)FUN_00418130)[6],
-          ((uint8_t*)FUN_00418130)[7] );
-  puts( "Calling FUN_00418130" );
-  FUN_00418130();
-}
+extern char __pe_data_start[];
+extern char __pe_data_idata_start[];
 
 __attribute__((stdcall)) int32_t
 ADVAPI32_RegOpenKeyExA( void *       h_key,
@@ -31,7 +14,12 @@ ADVAPI32_RegOpenKeyExA( void *       h_key,
                         uint32_t     ul_options,
                         uint32_t     sam_desired,
                         void **      phk_result ) {
-  puts( "ADVAPI32_RegOpenKeyExA" );
+  printf( "ADVAPI32_RegOpenKeyExA(%p, %p, %x, %x, %p)\n",
+          h_key,
+          lp_sub_key,
+          ul_options,
+          sam_desired,
+          phk_result );
   return ERROR_ACCESS_DENIED;
 }
 
@@ -98,7 +86,7 @@ KERNEL32_GetLastError( void ) {
 
 __attribute__((stdcall)) int32_t
 KERNEL32_GetStdHandle( uint32_t n_std_handle ) {
-  puts( "KERNEL32_GetStdHandle" );
+  printf( "KERNEL32_GetStdHandle(%p)\n", n_std_handle );
   return 0;
 }
 
@@ -856,4 +844,53 @@ WS2_32_6d43f8( uint32_t s,
                int      flags ) {
   printf( "WS2_32_recv(%u, %p, %u, %u)\n", s, buf, len, flags );
   return 0;
+}
+
+int
+main( void ) {
+  size_t orig_text_start   = 0x401000;
+  size_t orig_FUN_00418130 = 0x418130;
+
+  __attribute__((cdecl)) void(*FUN_00418130)() = (void(*)())(__pe_text_start + (orig_FUN_00418130-orig_text_start));
+  printf( "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
+
+  printf( "__pe_text_start       = %p\n", __pe_text_start       ); // 0x804820f
+  printf( "__pe_data_start       = %p\n", __pe_data_start       ); // 0x82a7024
+  printf( "__pe_data_idata_start = %p\n", __pe_data_idata_start ); // 0x830d424
+
+  printf( "FUN_00418130    = %p\n", FUN_00418130    );
+  printf( "*FUN_00418130   = %02x %02x %02x %02x %02x %02x %02x %02x\n"
+          "                  %02x %02x %02x %02x %02x %02x %02x %02x\n",
+          ((uint8_t*)FUN_00418130)[0],
+          ((uint8_t*)FUN_00418130)[1],
+          ((uint8_t*)FUN_00418130)[2],
+          ((uint8_t*)FUN_00418130)[3],
+          ((uint8_t*)FUN_00418130)[4],
+          ((uint8_t*)FUN_00418130)[5],
+          ((uint8_t*)FUN_00418130)[6],
+          ((uint8_t*)FUN_00418130)[7],
+          ((uint8_t*)FUN_00418130)[8],
+          ((uint8_t*)FUN_00418130)[9],
+          ((uint8_t*)FUN_00418130)[10],
+          ((uint8_t*)FUN_00418130)[11],
+          ((uint8_t*)FUN_00418130)[12],
+          ((uint8_t*)FUN_00418130)[13],
+          ((uint8_t*)FUN_00418130)[14],
+          ((uint8_t*)FUN_00418130)[15] );
+
+  uint32_t IAT_KERNEL32_GetStdHandle = *((uint32_t *)(FUN_00418130+8));
+  printf( "IATEntry KERNEL32.DLL!GetStdHandle = %p\n"
+          "         offset from section start = %p\n",
+          IAT_KERNEL32_GetStdHandle,
+          IAT_KERNEL32_GetStdHandle - (size_t)__pe_data_idata_start );
+
+  printf( "KERNEL32!GetStdHandle (IAT)  = %p\n"
+          "KERNEL32!GetStdHandle (real) = %p\n"
+          "                        diff = %#x\n",
+          *(uint32_t *)(IAT_KERNEL32_GetStdHandle),
+          (uint32_t)KERNEL32_GetStdHandle,
+          *(uint32_t *)(IAT_KERNEL32_GetStdHandle) - (uint32_t)KERNEL32_GetStdHandle );
+
+  puts( "Calling FUN_00418130" );
+  FUN_00418130();
 }

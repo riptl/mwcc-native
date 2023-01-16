@@ -2,7 +2,7 @@ TOOLCHAIN=./i686-linux-musl-native
 OBJCOPY=$(TOOLCHAIN)/bin/objcopy
 CC=$(TOOLCHAIN)/bin/gcc
 
-out/mwcceppc.elf: out/compat.o out/generated.o
+out/mwcceppc.elf: out/generated.o out/compat.o
 	$(CC) -static -no-pie -o $@ $^
 
 out/compat.o: compat.c

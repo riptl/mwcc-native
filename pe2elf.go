@@ -64,7 +64,7 @@ func main() {
 	peExc := peFile.Section(".exc")
 	rawExc := peExc.Open()
 	log.Printf("Exc vaddr:    %#x", baseVaddr+peExc.VirtualAddress)
-	if err = writer.copySection(rawExc, ".exc", elf.Section32{
+	if err = writer.copySection(rawExc, ".rodata.exc", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC),
 		Addr:  baseVaddr + peExc.VirtualAddress,
@@ -97,7 +97,7 @@ func main() {
 	peCRT := peFile.Section(".CRT")
 	rawCRT := peCRT.Open()
 	log.Printf("CRT vaddr:    %#x", baseVaddr+peCRT.VirtualAddress)
-	if err = writer.copySection(rawCRT, ".CRT", elf.Section32{
+	if err = writer.copySection(rawCRT, ".data.CRT", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
 		Addr:  baseVaddr + peCRT.VirtualAddress,
@@ -106,13 +106,17 @@ func main() {
 	}
 
 	peIdata := peFile.Section(".idata")
-	rawIdata := peIdata.Open()
 	log.Printf("Idata vaddr:  %#x", baseVaddr+peIdata.VirtualAddress)
-	if err = writer.copySection(rawIdata, ".idata", elf.Section32{
-		Type:  uint32(elf.SHT_PROGBITS),
-		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
-		Addr:  baseVaddr + peIdata.VirtualAddress,
-	}); err != nil {
+	// Instead of copying .idata, we zero it out completely.
+	// ELF relocs will fill it in, but we don't want any implicit addends.
+	// TODO This zero filling could be a bit more graceful
+	if err = writer.copySection(
+		bytes.NewReader(make([]byte, peIdata.VirtualSize)),
+		".data.idata", elf.Section32{
+			Type:  uint32(elf.SHT_PROGBITS),
+			Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
+			Addr:  baseVaddr + peIdata.VirtualAddress,
+		}); err != nil {
 		log.Fatal(err)
 	}
 
@@ -120,6 +124,8 @@ func main() {
 	if err = writer.addImports(peFile, peOpt, idataNdx); err != nil {
 		log.Fatal(err)
 	}
+
+	writer.addImplicitSyms()
 
 	peBss := peFile.Section(".bss")
 	log.Printf("Bss vaddr:    %#x", baseVaddr+peBss.VirtualAddress)
@@ -155,8 +161,8 @@ type elfWriter struct {
 	wr       *os.File
 	sections []elf.Section32
 	symtab   []elf.Sym32
-	symmap   map[symkey]int       // (shndx, vaddr) -> index in symtab
-	relocs   map[int][]elf.Rela32 // section index -> relocs
+	symmap   map[symkey]int      // (shndx, vaddr) -> index in symtab
+	relocs   map[int][]elf.Rel32 // section index -> relocs
 
 	shstrtab bytes.Buffer
 	strtab   bytes.Buffer
@@ -182,7 +188,7 @@ func (e *elfWriter) init(wr *os.File) error {
 	e.sections = []elf.Section32{{}}
 	e.symtab = []elf.Sym32{{}}
 	e.symmap = make(map[symkey]int)
-	e.relocs = make(map[int][]elf.Rela32)
+	e.relocs = make(map[int][]elf.Rel32)
 	return binary.Write(wr, binary.LittleEndian, &e.hdr)
 }
 
@@ -341,6 +347,13 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 			}
 			targetVaddr := binary.LittleEndian.Uint32(origAddrBuf[:])
 
+			// Patch site to zero
+			// TODO: We could simplify this by writing a section offset,
+			//       and using a symbol that points to the section start.
+			if _, err := e.wr.WriteAt([]byte{0, 0, 0, 0}, int64(sitePaddr)); err != nil {
+				log.Fatal(err)
+			}
+
 			// Detect section of reloc target
 			targetShndx := -1
 			for i, s := range e.sections {
@@ -354,23 +367,22 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 				continue
 			}
 
-			// Create symbol for start of section
+			// Create symbol for target
 			targetShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[targetShndx].Name))
 			targetSymIdx := e.addSym(elf.Sym32{
-				Name:  0,
-				Value: 0,
+				Value: targetVaddr - e.sections[targetShndx].Addr,
 				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
 				Shndx: uint16(targetShndx),
 				Other: uint8(elf.STV_DEFAULT),
 				Size:  0,
-			}, "__pe_"+strings.TrimLeft(targetShName, ".")+"_start")
+			}, fmt.Sprintf("__pe_unk_%x", targetVaddr))
 
 			// Create relocation entry
-			e.relocs[siteShndx] = append(e.relocs[siteShndx], elf.Rela32{
-				Off:    siteVaddr - e.sections[siteShndx].Addr,
-				Info:   elf.R_INFO32(uint32(targetSymIdx), uint32(elf.R_386_32)),
-				Addend: int32(targetVaddr - e.sections[targetShndx].Addr),
-			})
+			rel := elf.Rel32{
+				Off:  siteVaddr - e.sections[siteShndx].Addr,
+				Info: elf.R_INFO32(uint32(targetSymIdx), uint32(elf.R_386_32)),
+			}
+			e.relocs[siteShndx] = append(e.relocs[siteShndx], rel)
 
 			if verbose {
 				siteShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[siteShndx].Name))
@@ -381,6 +393,19 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 				)
 			}
 		}
+	}
+}
+
+func (e *elfWriter) addImplicitSyms() {
+	for i, s := range e.sections {
+		shName, _ := getString(e.shstrtab.Bytes(), int(s.Name))
+		e.addSym(elf.Sym32{
+			Value: 0,
+			Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
+			Shndx: uint16(i),
+			Other: uint8(elf.STV_DEFAULT),
+			Size:  0,
+		}, "__pe"+strings.ReplaceAll(shName, ".", "_")+"_start")
 	}
 }
 
@@ -499,15 +524,17 @@ func (e *elfWriter) addImports(peFile *pe.File, peOpt *pe.OptionalHeader32, idat
 				fn = fmt.Sprintf("%x", targetAddr)
 			}
 
+			// Declare new undefined symbol
 			symName := strings.TrimSuffix(dlls[i], ".dll") + "_" + fn
 			symIdx := e.addSym(elf.Sym32{
-				Value: targetAddr - e.sections[idataNdx].Addr,
-				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
+				Value: va,
+				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_FUNC),
 				Other: uint8(elf.STV_DEFAULT),
 				Shndx: uint16(elf.SHN_UNDEF),
 			}, symName)
 
-			e.relocs[idataNdx] = append(e.relocs[idataNdx], elf.Rela32{
+			// Emit relocation to symbol
+			e.relocs[idataNdx] = append(e.relocs[idataNdx], elf.Rel32{
 				Off:  targetAddr - e.sections[idataNdx].Addr,
 				Info: elf.R_INFO32(uint32(symIdx), uint32(elf.R_386_32)),
 			})
@@ -552,13 +579,13 @@ func (e *elfWriter) writeReltabs() error {
 		}
 
 		sec := elf.Section32{
-			Name:    e.addShstr(".rela" + name),
-			Type:    uint32(elf.SHT_RELA),
+			Name:    e.addShstr(".rel" + name),
+			Type:    uint32(elf.SHT_REL),
 			Off:     atStart,
 			Size:    atEnd - atStart,
 			Link:    uint32(len(e.sections) + nReltabs + 1), // .symtab follows last reloc section
 			Info:    uint32(i),
-			Entsize: uint32(binary.Size(elf.Rela32{})),
+			Entsize: uint32(binary.Size(elf.Rel32{})),
 		}
 		e.sections = append(e.sections, sec)
 	}
