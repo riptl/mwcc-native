@@ -170,3 +170,7 @@ or sometimes even adding back patched compiler bugs.
 
 Then, there's also the method itself.
 Running Windows programs *natively* under Linux, isn't that nice?
+
+---------------------------------------------------------------------
+
+*2023 by Richard Patel*
