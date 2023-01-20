@@ -13,17 +13,35 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"text/template"
+	"unicode/utf16"
+
+	"github.com/terorie/mwcc-native/pe2elf/winres"
 )
 
-var verbose bool
+var verbose uint
+
+const tibSize = 0xf78
+const tibVaddr = 0x10000000
 
 func main() {
 	inPath := flag.String("i", "", "PE input file")
 	outPath := flag.String("o", "out.elf", "ELF output file")
-	flag.BoolVar(&verbose, "v", false, "Verbose output")
+	outCstrPath := flag.String("out-cstr", "genstr.c", "Resource strings output file")
+	flag.UintVar(&verbose, "v", 0, "Verbosity (0=no 1=lil 2=much)")
+	symbolsPath := flag.String("symbols", "", "Path to symbols list")
 	flag.Parse()
 
 	log.Default().SetFlags(0)
+
+	var symbols []sym
+	if *symbolsPath != "" {
+		var err error
+		symbols, err = getSymbols(*symbolsPath)
+		if err != nil {
+			log.Fatal("Invalid symbols file: ", symbols)
+		}
+	}
 
 	peFile, err := pe.Open(*inPath)
 	if err != nil {
@@ -37,6 +55,12 @@ func main() {
 	}
 	defer outFile.Close()
 
+	outCstrFile, err := os.Create(*outCstrPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer outCstrFile.Close()
+
 	peOpt := peFile.OptionalHeader.(*pe.OptionalHeader32)
 	baseVaddr := peOpt.ImageBase
 	log.Printf("Base vaddr:   %#x", baseVaddr)
@@ -49,6 +73,61 @@ func main() {
 		log.Fatal(err)
 	}
 	writer.hdr.Entry = entryVaddr
+
+	var res winres.ResourceSet
+	peRes := peFile.Section(".rsrc")
+	rawRsrc, err := peRes.Data()
+	if err != nil {
+		log.Fatal("Failed to read .rsrc: ", err)
+	}
+	if err := res.Read(rawRsrc, peRes.VirtualAddress, winres.ID(0)); err != nil {
+		log.Fatal("Failed to parse .rsrc: ", err)
+	}
+
+	cstrTmpl := `/* Generated file */
+int const __pe_str_cnt = {{ . | len }};
+
+char const * const __pe_strs[] = {
+{{- range $i, $x := . }}
+  "{{- . -}}", /* {{ $i }} */
+{{- end }}
+""
+};`
+
+	escape := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`)
+	var strs []string
+	res.WalkType(winres.RT_STRING, func(resID winres.Identifier, langID uint16, data []byte) bool {
+		bundleID := uint(resID.(winres.ID))
+		rd := bytes.NewReader(data)
+		for i := uint(0); rd.Len() > 0 && i < 16; i++ {
+			var sz uint16
+			_ = binary.Read(rd, binary.LittleEndian, &sz)
+			if sz == 0 {
+				continue
+			}
+			points := make([]uint16, sz)
+			_ = binary.Read(rd, binary.LittleEndian, &points)
+			runes := utf16.Decode(points)
+			str := string(runes)
+			strID := (bundleID * 16) + i
+
+			if verbose >= 2 {
+				fmt.Printf(".rsrc str (%d): %s", strID, str)
+			}
+
+			if uint(len(strs)) <= strID {
+				strs = append(strs, make([]string, strID-uint(len(strs))+1)...)
+			}
+			strs[strID] = escape.Replace(str)
+		}
+		return true
+	})
+
+	tmpl, err := template.New("").Parse(cstrTmpl)
+	if err != nil {
+		log.Fatal("Invalid template: ", tmpl)
+	}
+	tmpl.Execute(outCstrFile, strs)
 
 	peText := peFile.Section(".text")
 	rawText := peText.Open()
@@ -69,7 +148,7 @@ func main() {
 		Flags: uint32(elf.SHF_ALLOC),
 		Addr:  baseVaddr + peExc.VirtualAddress,
 	}); err != nil {
-		log.Fatal(err)
+		log.Fatal("copySection(.rodata.exc):", err)
 	}
 
 	peRodata := peFile.Section(".rdata")
@@ -80,7 +159,7 @@ func main() {
 		Flags: uint32(elf.SHF_ALLOC),
 		Addr:  baseVaddr + peRodata.VirtualAddress,
 	}); err != nil {
-		log.Fatal(err)
+		log.Fatal("copySection(.rodata):", err)
 	}
 
 	peData := peFile.Section(".data")
@@ -91,7 +170,7 @@ func main() {
 		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
 		Addr:  baseVaddr + peData.VirtualAddress,
 	}); err != nil {
-		log.Fatal(err)
+		log.Fatal("copySection(.data):", err)
 	}
 
 	peCRT := peFile.Section(".CRT")
@@ -102,7 +181,7 @@ func main() {
 		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
 		Addr:  baseVaddr + peCRT.VirtualAddress,
 	}); err != nil {
-		log.Fatal(err)
+		log.Fatal("copySection(.data.CRT):", err)
 	}
 
 	peIdata := peFile.Section(".idata")
@@ -117,25 +196,33 @@ func main() {
 			Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
 			Addr:  baseVaddr + peIdata.VirtualAddress,
 		}); err != nil {
-		log.Fatal(err)
+		log.Fatal("copySection(.data.idata):", err)
 	}
 
 	idataNdx := len(writer.sections) - 1
 	if err = writer.addImports(peFile, peOpt, idataNdx); err != nil {
-		log.Fatal(err)
+		log.Fatal("addImports:", err)
 	}
 
 	writer.addImplicitSyms()
 
+	writer.addUserSyms(symbols)
+
 	peBss := peFile.Section(".bss")
 	log.Printf("Bss vaddr:    %#x", baseVaddr+peBss.VirtualAddress)
-	writer.addBss(peBss.VirtualSize, baseVaddr+peBss.VirtualAddress)
+	writer.addBss(peBss.VirtualSize, baseVaddr+peBss.VirtualAddress, ".bss")
+
+	writer.addBss(tibSize, tibVaddr, ".bss.tib")
+
+	if err := writer.patchMovFs(len(writer.sections)-1 /*bss.tib*/, 1 /*text*/); err != nil {
+		log.Fatal("patchMovFs:", err)
+	}
 
 	peRelocs := peFile.Section(".reloc")
 	writer.addRelocs(peRelocs, baseVaddr)
 
 	if err := writer.finish(); err != nil {
-		log.Fatal(err)
+		log.Fatal("finish:", err)
 	}
 }
 
@@ -209,14 +296,118 @@ func (e *elfWriter) align(n uint32) error {
 	return nil
 }
 
-func (e *elfWriter) addBss(size uint32, vaddr uint32) {
+func (e *elfWriter) addBss(size uint32, vaddr uint32, name string) {
 	e.sections = append(e.sections, elf.Section32{
-		Name:  e.addShstr(".bss"),
+		Name:  e.addShstr(name),
 		Type:  uint32(elf.SHT_NOBITS),
 		Flags: uint32(elf.SHF_ALLOC) | uint32(elf.SHF_WRITE),
 		Size:  size,
 		Addr:  vaddr,
 	})
+}
+
+// patchMovFs patches a bunch of instructions reading from `fs:[0]`.
+//
+// Very crappy poopy code, but good enough for mwcceppc.exe.
+func (e *elfWriter) patchMovFs(tibShndx, textShndx int) error {
+	// Create symbol for TIB
+	symIdx := e.addSym(elf.Sym32{
+		Value: 0,
+		Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
+		Shndx: uint16(tibShndx),
+		Other: uint8(elf.STV_DEFAULT),
+		Size:  0,
+	}, "__pe_tib")
+
+	// All refs to fs are usually in the first 2KiB.
+	buf := make([]byte, 2048)
+
+	// Read original bytes
+	shOff := int64(e.sections[textShndx].Off)
+	_, rdErr := io.ReadFull(io.NewSectionReader(e.wr, shOff, int64(len(buf))), buf)
+	if rdErr != nil {
+		return fmt.Errorf("failed to read .text to be patched: %w", rdErr)
+	}
+
+	// Old:      mov eax, dword [fs:0x0]
+	// New: nop; mov eax, dword [ds:__pe_tib+0x0]
+	e.patchTib(
+		buf, textShndx, 0, uint32(symIdx),
+		[]byte{0x64, 0xa1, 0x00, 0x00, 0x00, 0x00},
+		[]byte{0x90, 0xa1, 0x00, 0x00, 0x00, 0x00},
+		2,
+	)
+
+	// Old:      mov esi, dword [fs:0x0]
+	// New: nop; mov esi, dword [ds:__pe_tib+0x0]
+	e.patchTib(
+		buf, textShndx, 0, uint32(symIdx),
+		[]byte{0x64, 0x8b, 0x35, 0x00, 0x00, 0x00, 0x00},
+		[]byte{0x90, 0x8b, 0x35, 0x00, 0x00, 0x00, 0x00},
+		3,
+	)
+
+	// Old:      mov dword [fs:0x0],          ebx
+	// New: nop; mov dword [ds:__pe_tib+0x0], ebx
+	e.patchTib(
+		buf, textShndx, 0, uint32(symIdx),
+		[]byte{0x64, 0x89, 0x1d, 0x00, 0x00, 0x00, 0x00},
+		[]byte{0x90, 0x89, 0x1d, 0x00, 0x00, 0x00, 0x00},
+		3,
+	)
+
+	// Old:      mov dword [fs:0x0],          esp
+	// New: nop; mov dword [ds:__pe_tib+0x0], esp
+	e.patchTib(
+		buf, textShndx, 0, uint32(symIdx),
+		[]byte{0x64, 0x89, 0x25, 0x00, 0x00, 0x00, 0x00},
+		[]byte{0x90, 0x89, 0x25, 0x00, 0x00, 0x00, 0x00},
+		3,
+	)
+
+	// Old:      pop dword [fs:0x0]
+	// New: nop; pop dword [ds:__pe_tib+0x0]
+	e.patchTib(
+		buf, textShndx, 0, uint32(symIdx),
+		[]byte{0x64, 0x89, 0x25, 0x00, 0x00, 0x00, 0x00},
+		[]byte{0x90, 0x89, 0x25, 0x00, 0x00, 0x00, 0x00},
+		3,
+	)
+
+	// Write patched bytes
+	_, wrErr := e.wr.WriteAt(buf, shOff)
+	return wrErr
+}
+
+func (e *elfWriter) patchTib(
+	buf []byte, // section content
+	shndx int, // reloc site section inde
+	shOffset uint32, // offset within section
+	symNdx uint32, // index of symbol in symtab
+	oldBuf []byte, newBuf []byte, // replacement
+	relOffset uint16, // reloc offset witin replacement
+) {
+	if len(oldBuf) != len(newBuf) {
+		panic("patchBin: len(oldBuf) != len(newBuf)")
+	}
+	sectionName, _ := getString(e.shstrtab.Bytes(), int(e.sections[shndx].Name))
+	for len(buf) > 0 {
+		idx := bytes.Index(buf, oldBuf)
+		if idx < 0 {
+			break
+		}
+		copy(buf[idx:], newBuf)
+		buf = buf[idx+len(newBuf):]
+		shOffset += uint32(idx)
+		e.relocs[shndx] = append(e.relocs[shndx], elf.Rel32{
+			Off:  shOffset + uint32(relOffset),
+			Info: elf.R_INFO32(uint32(symNdx), uint32(elf.R_386_32)),
+		})
+		if verbose >= 1 {
+			log.Printf("TIB patch %s:%#04x+%d (%x => %x)", sectionName, shOffset, relOffset, oldBuf, newBuf)
+		}
+		shOffset += uint32(len(newBuf))
+	}
 }
 
 func (e *elfWriter) copySection(rd io.Reader, name string, sec elf.Section32) error {
@@ -305,7 +496,7 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 			if err == io.EOF {
 				break
 			}
-			log.Fatal(err)
+			log.Fatal("failed to read reloc block header:", err)
 		}
 		if hdr.PageRVA == 0 {
 			break
@@ -315,7 +506,7 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 		for i := uint32(0); i < hdr.BlockSize-8; i += 2 {
 			var reloc uint16
 			if err := binary.Read(rd, binary.LittleEndian, &reloc); err != nil {
-				log.Fatal(err)
+				log.Fatal("failed to read reloc:", err)
 			}
 			if reloc == 0 {
 				break
@@ -345,7 +536,7 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 			sitePaddr := e.sections[siteShndx].Off + siteVaddr - e.sections[siteShndx].Addr
 			var origAddrBuf [4]byte
 			if _, err := e.wr.ReadAt(origAddrBuf[:], int64(sitePaddr)); err != nil {
-				log.Fatal(err)
+				log.Fatalf("failed to read reloc at paddr=%#x vaddr=%#x shndx=%d: %v", sitePaddr, siteVaddr, siteShndx, err)
 			}
 			targetVaddr := binary.LittleEndian.Uint32(origAddrBuf[:])
 
@@ -386,7 +577,7 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 			}
 			e.relocs[siteShndx] = append(e.relocs[siteShndx], rel)
 
-			if verbose {
+			if verbose >= 2 {
 				siteShName, _ := getString(e.shstrtab.Bytes(), int(e.sections[siteShndx].Name))
 				log.Printf("Reloc type=%d %#x (%s+%#x) -> %#x (%s+%#x)",
 					relocType,
@@ -399,15 +590,45 @@ func (e *elfWriter) addRelocs(s *pe.Section, baseVaddr uint32) {
 }
 
 func (e *elfWriter) addImplicitSyms() {
-	for i, s := range e.sections {
+	for i, s := range e.sections[1:] {
 		shName, _ := getString(e.shstrtab.Bytes(), int(s.Name))
+		symName := "__pe" + strings.ReplaceAll(shName, ".", "_") + "_start"
 		e.addSym(elf.Sym32{
 			Value: 0,
 			Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
-			Shndx: uint16(i),
+			Shndx: uint16(i + 1),
 			Other: uint8(elf.STV_DEFAULT),
 			Size:  0,
-		}, "__pe"+strings.ReplaceAll(shName, ".", "_")+"_start")
+		}, symName)
+		if verbose >= 1 {
+			log.Printf("Adding implicit sym %s (shndx=%d value=0)", symName, i)
+		}
+	}
+}
+
+func (e *elfWriter) addUserSyms(symbols []sym) {
+	for _, sym := range symbols {
+		shNdx := -1
+		var shOffset uint32
+		for i, sec := range e.sections {
+			if sec.Addr <= sym.addr && sym.addr < sec.Addr+sec.Size {
+				shNdx = i
+				shOffset = sym.addr - sec.Addr
+			}
+		}
+		if shNdx < 0 {
+			continue
+		}
+		e.addSym(elf.Sym32{
+			Value: shOffset,
+			Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_NOTYPE),
+			Shndx: uint16(shNdx),
+			Other: uint8(elf.STV_DEFAULT),
+			Size:  0,
+		}, sym.name)
+		if verbose >= 1 {
+			log.Printf("Adding user sym %s (shndx=%d value=%d)", sym.name, shNdx, shOffset)
+		}
 	}
 }
 
@@ -541,7 +762,9 @@ func (e *elfWriter) addImports(peFile *pe.File, peOpt *pe.OptionalHeader32, idat
 				Info: elf.R_INFO32(uint32(symIdx), uint32(elf.R_386_32)),
 			})
 
-			log.Printf("Import at %#x %s!%s as %s", targetAddr, dlls[i], fn, symName)
+			if verbose >= 1 {
+				log.Printf("Import at %#x %s!%s as %s", targetAddr, dlls[i], fn, symName)
+			}
 			targetAddr += 4
 		}
 	}
@@ -638,4 +861,38 @@ func (e *elfWriter) finish() error {
 		return err
 	}
 	return binary.Write(e.wr, binary.LittleEndian, e.hdr)
+}
+
+type sym struct {
+	addr uint32
+	name string
+}
+
+func getSymbols(symbolsPath string) ([]sym, error) {
+	f, err := os.Open(symbolsPath)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var syms []sym
+	scn := bufio.NewScanner(f)
+	for i := 1; scn.Scan(); i++ {
+		line := strings.TrimSpace(scn.Text())
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) != 2 {
+			return syms, fmt.Errorf("line %d: invalid entry", i)
+		}
+		addr, err := strconv.ParseUint(parts[0], 0, 32)
+		if err != nil {
+			return syms, fmt.Errorf("line %d: invalid address: %w", i, err)
+		}
+		syms = append(syms, sym{
+			addr: uint32(addr),
+			name: parts[1],
+		})
+	}
+	return syms, scn.Err()
 }
