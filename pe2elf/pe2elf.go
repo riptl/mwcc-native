@@ -89,7 +89,7 @@ int const __pe_str_cnt = {{ . | len }};
 
 char const * const __pe_strs[] = {
 {{- range $i, $x := . }}
-  "{{- . -}}", /* {{ $i }} */
+  /*{{ $i | printf "% 4d" }} */ "{{- . -}}",
 {{- end }}
 ""
 };`
@@ -125,7 +125,7 @@ char const * const __pe_strs[] = {
 
 	tmpl, err := template.New("").Parse(cstrTmpl)
 	if err != nil {
-		log.Fatal("Invalid template: ", tmpl)
+		log.Fatal("Invalid template: ", err)
 	}
 	tmpl.Execute(outCstrFile, strs)
 
