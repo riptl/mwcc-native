@@ -96,8 +96,10 @@ char const * const __pe_strs[] = {
 
 	escape := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`)
 	var strs []string
+	var strID uint
 	res.WalkType(winres.RT_STRING, func(resID winres.Identifier, langID uint16, data []byte) bool {
 		bundleID := uint(resID.(winres.ID))
+		_ = bundleID
 		rd := bytes.NewReader(data)
 		for i := uint(0); rd.Len() > 0 && i < 16; i++ {
 			var sz uint16
@@ -109,7 +111,8 @@ char const * const __pe_strs[] = {
 			_ = binary.Read(rd, binary.LittleEndian, &points)
 			runes := utf16.Decode(points)
 			str := string(runes)
-			strID := (bundleID * 16) + i
+			//strID := (bundleID * 16) + i
+			strID++
 
 			if verbose >= 2 {
 				fmt.Printf(".rsrc str (%d): %s", strID, str)

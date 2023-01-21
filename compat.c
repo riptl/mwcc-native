@@ -145,7 +145,7 @@ KERNEL32_DuplicateHandle( void *   h_source_process_handle,
 __attribute__((stdcall))
 int32_t
 KERNEL32_GetLastError( void ) {
-  fprintf( stderr, "KERNEL32_GetLastError() = %u\n", g_last_error );
+  //fprintf( stderr, "KERNEL32_GetLastError() = %u\n", g_last_error );
   return g_last_error;
 }
 
@@ -165,25 +165,37 @@ KERNEL32_GetStdHandle( int32_t n_std_handle ) {
 __attribute__((stdcall))
 void
 KERNEL32_InitializeCriticalSection( void * lp_critical_section ) {
-  pthread_mutex_init( lp_critical_section, NULL );
+# ifdef HAS_THREADS
+  pthread_mutexattr_t attr;
+  pthread_mutexattr_init(&attr);
+  pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+  pthread_mutex_init( lp_critical_section, &attr );
+# endif /* HAS_THREADS */
 }
 
 __attribute__((stdcall))
 void
 KERNEL32_DeleteCriticalSection( void * lp_critical_section ) {
+# ifdef HAS_THREADS
   pthread_mutex_destroy( lp_critical_section );
+# endif /* HAS_THREADS */
 }
 
 __attribute__((stdcall))
 void
 KERNEL32_EnterCriticalSection( void * lp_critical_section ) {
+# ifdef HAS_THREADS
+  fprintf( stderr, "KERNEL32_EnterCriticalSection(%p)\n", lp_critical_section );
   pthread_mutex_lock( lp_critical_section );
+# endif /* HAS_THREADS */
 }
 
 __attribute__((stdcall))
 void
 KERNEL32_LeaveCriticalSection( void * lp_critical_section ) {
+# ifdef HAS_THREADS
   pthread_mutex_unlock( lp_critical_section );
+# endif /* HAS_THREADS */
 }
 
 __attribute__((stdcall))
@@ -309,7 +321,7 @@ KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
                                char *   lp_buffer ) {
   fprintf( stderr, "KERNEL32_GetCurrentDirectoryA(%u, %p)\n", n_buffer_length, lp_buffer );
   snprintf( lp_buffer, n_buffer_length, "." );
-  g_last_error = ERROR_FILE_NOT_FOUND;
+  g_last_error = ERROR_SUCCESS;
   return 0;
 }
 
@@ -363,7 +375,7 @@ KERNEL32_CloseHandle( uint32_t h_object ) {
 }
 
 #define COMPAT_TLS_SIZE 32
-static __thread uint32_t tls_index = 0; 
+static __thread uint32_t tls_index = 1; 
 static __thread uint32_t tls_slots[COMPAT_TLS_SIZE];
 
 __attribute__((stdcall))
@@ -383,6 +395,7 @@ KERNEL32_TlsFree( uint32_t dw_tls_index ) {
   fprintf( stderr, "KERNEL32_TlsFree(%u)\n", dw_tls_index );
   if( dw_tls_index>=COMPAT_TLS_SIZE )
     return 0;
+  g_last_error = ERROR_SUCCESS;
   return 1;
 }
 
@@ -390,7 +403,8 @@ __attribute__((stdcall))
 uint32_t
 KERNEL32_TlsGetValue( uint32_t dw_tls_index ) {
   uint32_t val = tls_slots[ dw_tls_index ];
-  //fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
+  fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
+  g_last_error = ERROR_SUCCESS;
   return val;
 }
 
@@ -400,16 +414,22 @@ KERNEL32_TlsSetValue( uint32_t dw_tls_index,
                       uint32_t lp_tls_value ) {
   fprintf( stderr, "KERNEL32_TlsSetValue(%u, %#x)\n", dw_tls_index, lp_tls_value );
   tls_slots[ dw_tls_index ] = lp_tls_value;
+  g_last_error = ERROR_SUCCESS;
   return 1;
 }
 
 __attribute__((stdcall))
 void *
 KERNEL32_GetModuleHandleA( char const * lp_module_name ) {
+  fprintf( stderr, "KERNEL32_GetModuleHandleA(\"%s\")\n", lp_module_name );
   void * handle = NULL;
-  if( !lp_module_name ) handle = &g_cur_module;
-  fprintf( stderr, "KERNEL32_GetModuleHandleA(%s) = %p\n", lp_module_name, handle );
-  return handle;
+  if( !lp_module_name ) {
+    handle = &g_cur_module;
+    return handle;
+  }
+
+  g_last_error = ERROR_FILE_NOT_FOUND;
+  return NULL;
 }
 
 __attribute__((stdcall))
@@ -449,14 +469,14 @@ KERNEL32_GlobalAlloc( uint32_t u_flags,
   if( ptr && (u_flags&0x40)!=0 ) {
     memset( ptr, 0, dw_bytes );
   }
-  //fprintf( stderr, "KERNEL32_GlobalAlloc(%u, %u) = %p\n", u_flags, dw_bytes, ptr );
+  fprintf( stderr, "KERNEL32_GlobalAlloc(%u, %u) = %p\n", u_flags, dw_bytes, ptr );
   return (int32_t *)ptr;
 }
 
 __attribute__((stdcall))
 int32_t *
 KERNEL32_GlobalFree( int32_t * h_mem ) {
-  //fprintf( stderr, "KERNEL32_GlobalFree(%p)\n", h_mem );
+  fprintf( stderr, "KERNEL32_GlobalFree(%p)\n", h_mem );
   return 0;
 }
 
@@ -471,7 +491,8 @@ KERNEL32_GetFullPathNameA( char const * lp_file_name,
           n_buffer_length,
           lp_buffer,
           lp_file_part );
-  g_last_error = ERROR_FILE_NOT_FOUND;
+  snprintf( lp_buffer, n_buffer_length, "fuck you\n" );
+  lp_file_part = &lp_buffer;
   return 0;
 }
 
@@ -502,14 +523,17 @@ KERNEL32_WriteFile( uint32_t     h_file,
   //  
   //
   //}
-  fwrite( lp_buffer, 1, n_number_of_bytes_to_write, stdout );
-  fprintf( stderr, "KERNEL32_WriteFile(%p, %p, %u, %p, %p)\n",
+  int nbytes = fwrite( lp_buffer, 1, n_number_of_bytes_to_write, stdout );
+  if( lp_number_of_bytes_written ) {
+    *lp_number_of_bytes_written = (uint32_t)nbytes;
+  }
+  fprintf( stderr, "KERNEL32_WriteFile(%p, \"%s\", %u, %p, %p)\n",
           h_file,
           lp_buffer,
           n_number_of_bytes_to_write,
           lp_number_of_bytes_written,
           lp_overlapped );
-  return 0;
+  return 1;
 }
 
 __attribute__((stdcall))
@@ -683,13 +707,24 @@ int32_t *
 KERNEL32_GlobalReAlloc( int32_t * h_mem,
                         uint32_t  u_bytes,
                         uint32_t  u_flags ) {
-  return realloc( h_mem, u_bytes );
+  fprintf( stderr, "KERNEL32_GlobalReAlloc(%p, %u, %#x)\n", h_mem, u_bytes, u_flags );
+  if( !h_mem ) return NULL;
+  static int allocs = 0;
+  void * obj = realloc( h_mem, u_bytes );
+  if( u_bytes==256 ) obj = NULL;
+  if( obj==NULL )
+    g_last_error = ERROR_OUTOFMEMORY;
+  else
+    g_last_error = ERROR_SUCCESS;
+  //g_last_error = ERROR_SUCCESS;
+  return obj;
 }
 
 __attribute__((stdcall))
 uint32_t
 KERNEL32_GlobalFlags( int32_t * h_mem ) {
   //fprintf( stderr, "KERNEL32_GlobalFlags(%p)\n", h_mem );
+  if( !h_mem ) return GMEM_INVALID_HANDLE;
   return 0;
 }
 
@@ -869,25 +904,40 @@ KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information ) {
   return 0;
 }
 
-__attribute__((stdcall))
+__attribute__((cdecl))
 int32_t
-LMGR8C_6d4394( void ) {
-  fprintf( stderr, "LMGR8C_6d4394()\n" );
+LMGR8C_6d4394( int32_t v1,
+               int32_t policy,
+               char *  feature,
+               char *  version,
+               int     num_lic,
+               char *  license_file_list ) {
+  fprintf( stderr, "LMGR8C_6d4394(%p, %p, \"%s\", \"%s\", %u, \"%s\")\n",
+           v1,
+           policy,
+           feature, 
+           version,
+           num_lic,
+           license_file_list );
   return 0;
 }
 
-__attribute__((stdcall))
+__attribute__((cdecl))
 int32_t
-LMGR8C_6d4398( void ) {
-  fprintf( stderr, "LMGR8C_6d4398()\n" );
+LMGR8C_6d4398( int32_t v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6 ) {
+  fprintf( stderr, "LMGR8C_6d4398(%p, %p, \"%s\", %p, %p, %s)\n", v1, v2, v3, v4, v5, v6 );
   return 0;
 }
 
-__attribute__((stdcall))
+static char lmgr8c_errbuf[4096] = {0};
+
+/* lp_errstring	*/
+__attribute__((cdecl))
 int32_t
 LMGR8C_6d439c( void ) {
-  fprintf( stderr, "LMGR8C_6d4398()\n" );
-  return 0;
+  fprintf( stderr, "LMGR8C_6d439c()\n" );
+  puts(lmgr8c_errbuf);
+  return (int32_t)lmgr8c_errbuf;
 }
 
 __attribute__((stdcall))

@@ -259,9 +259,14 @@
 
 #define INVALID_HANDLE_VALUE (-1)
 
+#define GMEM_INVALID_HANDLE 0x8000
+
 #define STD_INPUT_HANDLE  (-10)
 #define STD_OUTPUT_HANDLE (-11)
 #define STD_ERROR_HANDLE  (-12)
+
+/* If HAS_THREADS is 0, locking-related syscalls are no-ops */
+//#define HAS_THREADS 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -686,15 +691,20 @@ __attribute__((stdcall))
 uint32_t
 KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information );
 
-__attribute__((stdcall))
+__attribute__((cdecl))
 int32_t
-LMGR8C_6d4394( void );
+LMGR8C_6d4394( int32_t v1,
+               int32_t policy,
+               char *  feature,
+               char *  version,
+               int     num_lic,
+               char *  license_file_list );
 
-__attribute__((stdcall))
+__attribute__((cdecl))
 int32_t
-LMGR8C_6d4398( void );
+LMGR8C_6d4398( int32_t, int32_t, int32_t, int32_t, int32_t, int32_t );
 
-__attribute__((stdcall))
+__attribute__((cdecl))
 int32_t
 LMGR8C_6d439c( void );
 
