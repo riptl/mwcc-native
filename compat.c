@@ -904,6 +904,14 @@ KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information ) {
   return 0;
 }
 
+__attribute__((stdcall))
+int
+KERNEL32_FileTimeToLocalFileTime( void const * lp_file_time,
+                                  void *       lp_local_file_time ) {
+  fprintf( stderr, "KERNEL32_FileTimeToLocalFileTime(%p, %p)\n", lp_file_time, lp_local_file_time );
+  return 0;
+}
+
 __attribute__((cdecl))
 int32_t
 LMGR8C_lp_checkout( int32_t v1,
@@ -1148,4 +1156,19 @@ WS2_32_recv( uint32_t s,
              int      flags ) {
   fprintf( stderr, "WS2_32_recv(%u, %p, %u, %u)\n", s, buf, len, flags );
   return 0;
+}
+
+int
+main( int     argc,
+      char ** argv ) {
+  fprintf( stderr, "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
+
+  fprintf( stderr, "__pe_text_start       = %p\n", __pe_text_start       ); // 0x804820f
+  fprintf( stderr, "__pe_data_start       = %p\n", __pe_data_start       ); // 0x82a7024
+  fprintf( stderr, "__pe_data_idata_start = %p\n", __pe_data_idata_start ); // 0x830d424
+
+  g_argc = argc;
+  g_argv = argv;
+
+  __pe_text_start_enter();
 }

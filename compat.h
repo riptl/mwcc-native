@@ -691,6 +691,11 @@ __attribute__((stdcall))
 uint32_t
 KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information );
 
+__attribute__((stdcall))
+int
+KERNEL32_FileTimeToLocalFileTime( void const * lp_file_time,
+                                  void *       lp_local_file_time );
+
 __attribute__((cdecl))
 int32_t
 LMGR8C_lp_checkout( int32_t v1,

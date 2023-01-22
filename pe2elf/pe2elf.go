@@ -25,6 +25,16 @@ import (
 
 var verbose uint
 
+var discardLogger = log.New(io.Discard, "", 0)
+
+func logger(level uint) *log.Logger {
+	if level <= verbose {
+		return log.Default()
+	} else {
+		return discardLogger
+	}
+}
+
 const tibSize = 0xf78
 const tibVaddr = 0x10000000
 
@@ -107,10 +117,10 @@ func main() {
 
 	peOpt := peFile.OptionalHeader.(*pe.OptionalHeader32)
 	baseVaddr := peOpt.ImageBase
-	log.Printf("Base vaddr:   %#x", baseVaddr)
+	logger(1).Printf("Base vaddr:   %#x", baseVaddr)
 
 	entryVaddr := baseVaddr + peOpt.AddressOfEntryPoint
-	log.Printf("Entry vaddr:  %#x", entryVaddr)
+	logger(1).Printf("Entry vaddr:  %#x", entryVaddr)
 
 	var writer elfWriter
 	if err := writer.init(outFile); err != nil {
@@ -178,7 +188,7 @@ char const * const __pe_strs[] = {
 
 	peText := peFile.Section(".text")
 	rawText := peText.Open()
-	log.Printf("Text vaddr:   %#x", baseVaddr+peText.VirtualAddress)
+	logger(1).Printf("Text vaddr:   %#x", baseVaddr+peText.VirtualAddress)
 	if err = writer.copySection(rawText, ".text", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC | elf.SHF_EXECINSTR),
@@ -189,7 +199,7 @@ char const * const __pe_strs[] = {
 
 	peExc := peFile.Section(".exc")
 	rawExc := peExc.Open()
-	log.Printf("Exc vaddr:    %#x", baseVaddr+peExc.VirtualAddress)
+	logger(1).Printf("Exc vaddr:    %#x", baseVaddr+peExc.VirtualAddress)
 	if err = writer.copySection(rawExc, ".rodata.exc", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC),
@@ -200,7 +210,7 @@ char const * const __pe_strs[] = {
 
 	peRodata := peFile.Section(".rdata")
 	rawRodata := peRodata.Open()
-	log.Printf("Rodata vaddr: %#x", baseVaddr+peRodata.VirtualAddress)
+	logger(1).Printf("Rodata vaddr: %#x", baseVaddr+peRodata.VirtualAddress)
 	if err = writer.copySection(rawRodata, ".rodata", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC),
@@ -211,7 +221,7 @@ char const * const __pe_strs[] = {
 
 	peData := peFile.Section(".data")
 	rawData := peData.Open()
-	log.Printf("Data vaddr:   %#x", baseVaddr+peData.VirtualAddress)
+	logger(1).Printf("Data vaddr:   %#x", baseVaddr+peData.VirtualAddress)
 	if err = writer.copySection(rawData, ".data", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
@@ -222,7 +232,7 @@ char const * const __pe_strs[] = {
 
 	peCRT := peFile.Section(".CRT")
 	rawCRT := peCRT.Open()
-	log.Printf("CRT vaddr:    %#x", baseVaddr+peCRT.VirtualAddress)
+	logger(1).Printf("CRT vaddr:    %#x", baseVaddr+peCRT.VirtualAddress)
 	if err = writer.copySection(rawCRT, ".data.CRT", elf.Section32{
 		Type:  uint32(elf.SHT_PROGBITS),
 		Flags: uint32(elf.SHF_ALLOC | elf.SHF_WRITE),
@@ -232,7 +242,7 @@ char const * const __pe_strs[] = {
 	}
 
 	peIdata := peFile.Section(".idata")
-	log.Printf("Idata vaddr:  %#x", baseVaddr+peIdata.VirtualAddress)
+	logger(1).Printf("Idata vaddr:  %#x", baseVaddr+peIdata.VirtualAddress)
 	// Instead of copying .idata, we zero it out completely.
 	// ELF relocs will fill it in, but we don't want any implicit addends.
 	// TODO This zero filling could be a bit more graceful
@@ -256,7 +266,7 @@ char const * const __pe_strs[] = {
 	writer.addUserSyms(symbols)
 
 	peBss := peFile.Section(".bss")
-	log.Printf("Bss vaddr:    %#x", baseVaddr+peBss.VirtualAddress)
+	logger(1).Printf("Bss vaddr:    %#x", baseVaddr+peBss.VirtualAddress)
 	writer.addBss(peBss.VirtualSize, baseVaddr+peBss.VirtualAddress, ".bss")
 
 	writer.addBss(tibSize, tibVaddr, ".bss.tib")

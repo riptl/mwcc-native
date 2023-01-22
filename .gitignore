@@ -1,4 +1,5 @@
 out/
 env/
-*.exe
+/exe/*
+!/exe/README.md
 i686-linux-musl-native/

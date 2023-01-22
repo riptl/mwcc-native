@@ -19,8 +19,8 @@ This integration is about 30% done.
 - [x] Scaffold for compatibility module containing Windows library calls
 - [x] Demo 
 - [ ] PE symbol maps
-- [ ] Runtime environment for entering Windows `main()`
-- [ ] Implement console logging
+- [x] Runtime environment for entering Windows `main()`
+- [x] Implement console logging
 - [ ] Implement file I/O
 - ...
 
