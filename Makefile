@@ -23,7 +23,7 @@ $(OUT)/genstr.o: $(OUT)/genstr.c
 $(OUT)/generated.o $(OUT)/genstr.c: $(OUT)/pe2elf $(OUT) mwcceppc.exe mwcceppc_syms.txt
 	$(OUT)/pe2elf -i mwcceppc.exe -o $(OUT)/generated.o -out-cstr $(OUT)/genstr.c -symbols mwcceppc_syms.txt -v=1
 
-$(OUT)/pe2elf: $(wildcard pe2elf/*.go pe2elf/winres/*.go) $(OUT)
+$(OUT)/pe2elf: $(wildcard pe2elf/*.go pe2elf/winres/*.go) pe2elf/ordinals.csv $(OUT)
 	touch $@ && cd pe2elf && $(GO) build -o $(shell realpath $@) -buildvcs=false .
 
 .PHONY: clean

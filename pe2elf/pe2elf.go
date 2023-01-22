@@ -5,11 +5,15 @@ import (
 	"bytes"
 	"debug/elf"
 	"debug/pe"
+	_ "embed"
 	"encoding/binary"
+	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -23,6 +27,46 @@ var verbose uint
 
 const tibSize = 0xf78
 const tibVaddr = 0x10000000
+
+//go:embed ordinals.csv
+var knownOrdinalsCSV []byte
+
+var knownOrdinals map[string]map[uint16]string
+
+func init() {
+	if err := initOrdinals(); err != nil {
+		panic("invalid ordinals.csv, please recompile pe2elf: " + err.Error())
+	}
+}
+
+func initOrdinals() error {
+	knownOrdinals = make(map[string]map[uint16]string)
+	rd := csv.NewReader(bytes.NewReader(knownOrdinalsCSV))
+	_, _ = rd.Read()
+	for {
+		record, err := rd.Read()
+		if errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return err
+		}
+		dll, ordinalStr, name := record[0], record[1], record[2]
+		ordinal64, err := strconv.ParseUint(ordinalStr, 10, 16)
+		if err != nil {
+			return err
+		}
+		if ordinal64 > math.MaxUint16 {
+			return fmt.Errorf("ordinal number too large (%d)", ordinal64)
+		}
+		lut := knownOrdinals[dll]
+		if lut == nil {
+			lut = make(map[uint16]string)
+			knownOrdinals[dll] = lut
+		}
+		lut[uint16(ordinal64)] = name
+	}
+	return nil
+}
 
 func main() {
 	inPath := flag.String("i", "", "PE input file")
@@ -734,24 +778,47 @@ func (e *elfWriter) addImports(peFile *pe.File, peOpt *pe.OptionalHeader32, idat
 	names, _ := ds.Data()
 	dlls := make([]string, len(ida))
 	for i, dt := range ida {
-		dlls[i], _ = getString(names, int(dt.Name-ds.VirtualAddress))
+		dll, ok := getString(names, int(dt.Name-ds.VirtualAddress))
+		if !ok {
+			log.Printf("Import directory %d missing name (name=%d)", i, dt.Name)
+			continue
+		}
+		dll = strings.TrimSuffix(strings.ToUpper(dll), ".DLL")
+		dlls[i] = dll
 		d, _ = ds.Data()
 		// seek to OriginalFirstThunk
 		d = d[dt.OriginalFirstThunk-ds.VirtualAddress:]
 		targetAddr := peOpt.ImageBase + dt.FirstThunk
+		j := -1
 		for len(d) > 0 {
+			j++
 			va := binary.LittleEndian.Uint32(d[0:4])
 			d = d[4:]
 			if va == 0 {
 				break
 			}
-			fn, _ := getString(names, int(va-ds.VirtualAddress+2))
-			if fn == "" {
-				fn = fmt.Sprintf("%x", targetAddr)
+
+			var fn string
+			isOrdinal := (va & 0x8000_0000) != 0
+			if isOrdinal {
+				ordinal := uint16(va & 0xFFFF)
+				if dllTab := knownOrdinals[dll]; dllTab != nil {
+					fn = dllTab[ordinal]
+				}
+				if fn == "" {
+					log.Printf("Import %s ord %d missing known ordinal name", dll, ordinal)
+					fn = fmt.Sprintf("ord_%d", ordinal)
+				}
+			} else {
+				fn, ok = getString(names, int(va-ds.VirtualAddress+2))
+				if !ok {
+					log.Printf("Import %s/%d missing literal name (va=%#x ds_va=%#x)", dll, j, va, ds.VirtualAddress)
+					fn = fmt.Sprintf("%x", targetAddr)
+				}
 			}
 
 			// Declare new undefined symbol
-			symName := strings.TrimSuffix(dlls[i], ".dll") + "_" + fn
+			symName := dll + "_" + fn
 			symIdx := e.addSym(elf.Sym32{
 				Value: va,
 				Info:  elf.ST_INFO(elf.STB_GLOBAL, elf.STT_FUNC),
