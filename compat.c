@@ -906,13 +906,13 @@ KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information ) {
 
 __attribute__((cdecl))
 int32_t
-LMGR8C_6d4394( int32_t v1,
-               int32_t policy,
-               char *  feature,
-               char *  version,
-               int     num_lic,
-               char *  license_file_list ) {
-  fprintf( stderr, "LMGR8C_6d4394(%p, %p, \"%s\", \"%s\", %u, \"%s\")\n",
+LMGR8C_lp_checkout( int32_t v1,
+                    int32_t policy,
+                    char *  feature,
+                    char *  version,
+                    int     num_lic,
+                    char *  license_file_list ) {
+  fprintf( stderr, "LMGR8C_lp_checkout(%p, %p, \"%s\", \"%s\", %u, \"%s\")\n",
            v1,
            policy,
            feature, 
@@ -924,8 +924,8 @@ LMGR8C_6d4394( int32_t v1,
 
 __attribute__((cdecl))
 int32_t
-LMGR8C_6d4398( int32_t v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6 ) {
-  fprintf( stderr, "LMGR8C_6d4398(%p, %p, \"%s\", %p, %p, %s)\n", v1, v2, v3, v4, v5, v6 );
+LMGR8C_lp_checkin( int32_t v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6 ) {
+  fprintf( stderr, "LMGR8C_lp_checkin(%p, %p, \"%s\", %p, %p, %s)\n", v1, v2, v3, v4, v5, v6 );
   return 0;
 }
 
@@ -934,8 +934,8 @@ static char lmgr8c_errbuf[4096] = {0};
 /* lp_errstring	*/
 __attribute__((cdecl))
 int32_t
-LMGR8C_6d439c( void ) {
-  fprintf( stderr, "LMGR8C_6d439c()\n" );
+LMGR8C_lp_errstring( void ) {
+  fprintf( stderr, "LMGR8C_lp_errstring()\n" );
   puts(lmgr8c_errbuf);
   return (int32_t)lmgr8c_errbuf;
 }
@@ -1028,104 +1028,92 @@ ole32_CoTaskMemAlloc( uint32_t cb ) {
   return 0;
 }
 
-// WS2_32_WSAStartup
 __attribute__((stdcall))
 int
-WS2_32_6d43c0( uint16_t w_version_requested,
-               void *   lp_wsa_data ) {
+WS2_32_WSAStartup( uint16_t w_version_requested,
+                   void *   lp_wsa_data ) {
   fprintf( stderr, "WS2_32_WSAStartup(%u, %p)\n", w_version_requested, lp_wsa_data );
   return 0;
 }
 
-// WS2_32_WSAGetLastError
 __attribute__((stdcall))
 int
-WS2_32_6d43c4( void ) {
+WS2_32_WSAGetLastError( void ) {
   fprintf( stderr, "WS2_32_WSAGetLastError()\n" );
   return 0;
 }
 
-// WS2_32_ntohs
 __attribute__((stdcall))
 uint16_t
-WS2_32_6d43c8( uint16_t netshort ) {
+WS2_32_ntohs( uint16_t netshort ) {
   fprintf( stderr, "WS2_32_ntohs(%u)\n", netshort );
   return 0;
 }
 
-// WS2_32_inet_ntoa
 __attribute__((stdcall))
 char const *
-WS2_32_6d43cc( void * in_addr ) {
+WS2_32_inet_ntoa( void * in_addr ) {
   fprintf( stderr, "WS2_32_inet_ntoa(%p)\n", in_addr );
   return 0;
 }
 
-// WS2_32_shutdown
 __attribute__((stdcall))
 int
-WS2_32_6d43d0( uint32_t s,
-               int      how ) {
+WS2_32_shutdown( uint32_t s,
+                 int      how ) {
   fprintf( stderr, "WS2_32_shutdown(%u, %u)\n", s, how );
   return 0;
 }
 
-// WS2_32_closesocket
 __attribute__((stdcall))
 int
-WS2_32_6d43d4( uint32_t s ) {
+WS2_32_closesocket( uint32_t s ) {
   fprintf( stderr, "WS2_32_closesocket(%u)\n", s );
   return 0;
 }
 
-// WS2_32_WSACleanup
 __attribute__((stdcall))
 int
-WS2_32_6d43d8( void ) {
+WS2_32_WSACleanup( void ) {
   fprintf( stderr, "WS2_32_WSACleanup()\n" );
   return 0;
 }
 
-// WS2_32_socket
 __attribute__((stdcall))
 uint32_t
-WS2_32_6d43dc( int af,
+WS2_32_socket( int af,
                int type,
                int protocol ) {
   fprintf( stderr, "WS2_32_socket(%u, %u, %u)\n", af, type, protocol );
   return 0;
 }
 
-// WS2_32_htons
 __attribute__((stdcall))
 uint16_t
-WS2_32_6d43e0( uint16_t hostshort ) {
+WS2_32_htons( uint16_t hostshort ) {
   fprintf( stderr, "WS2_32_htons(%u)\n", hostshort );
   return 0;
 }
 
-// WS2_32_inet_addr
 __attribute__((stdcall))
 uint32_t
-WS2_32_6d43e4( char const * cp ) {
+WS2_32_inet_addr( char const * cp ) {
   fprintf( stderr, "WS2_32_inet_addr(%p)\n", cp );
   return 0;
 }
 
-// WS2_32_connect
 __attribute__((stdcall))
 int
-WS2_32_6d43e8( uint32_t s,
-               void *   name,
-               int      namelen ) {
+WS2_32_connect( uint32_t s,
+                void *   name,
+                int      namelen ) {
   fprintf( stderr, "WS2_32_connect(%u, %p, %u)\n", s, name, namelen );
   return 0;
 }
 
-// WS2_32_select
 __attribute__((stdcall))
 int
-WS2_32_6d43ec( int    nfds,
+WS2_32_select( int    nfds,
                void * readfds,
                void * writefds,
                void * exceptfds,
@@ -1134,33 +1122,30 @@ WS2_32_6d43ec( int    nfds,
   return 0;
 }
 
-// WS2_32___WSAFDIsSet
 __attribute__((stdcall))
 int
-WS2_32_6d43f0( uint32_t s,
-               void *   fd_set ) {
+WS2_32___WSAFDIsSet( uint32_t s,
+                     void *   fd_set ) {
   fprintf( stderr, "WS2_32___WSAFDIsSet(%u, %p)\n", s, fd_set );
   return 0;
 }
 
-// WS2_32_send
 __attribute__((stdcall))
 int
-WS2_32_6d43f4( uint32_t s,
-               void *   buf,
-               int      len,
-               int      flags ) {
+WS2_32_send( uint32_t s,
+             void *   buf,
+             int      len,
+             int      flags ) {
   fprintf( stderr, "WS2_32_send(%u, %p, %u, %u)\n", s, buf, len, flags );
   return 0;
 }
 
-// WS2_32_recv
 __attribute__((stdcall))
 int
-WS2_32_6d43f8( uint32_t s,
-               void *   buf,
-               int      len,
-               int      flags ) {
+WS2_32_recv( uint32_t s,
+             void *   buf,
+             int      len,
+             int      flags ) {
   fprintf( stderr, "WS2_32_recv(%u, %p, %u, %u)\n", s, buf, len, flags );
   return 0;
 }

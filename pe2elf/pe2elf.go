@@ -783,7 +783,7 @@ func (e *elfWriter) addImports(peFile *pe.File, peOpt *pe.OptionalHeader32, idat
 			log.Printf("Import directory %d missing name (name=%d)", i, dt.Name)
 			continue
 		}
-		dll = strings.TrimSuffix(strings.ToUpper(dll), ".DLL")
+		dll = strings.TrimSuffix(strings.TrimSuffix(dll, ".DLL"), ".dll")
 		dlls[i] = dll
 		d, _ = ds.Data()
 		// seek to OriginalFirstThunk

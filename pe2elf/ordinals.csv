@@ -181,3 +181,6 @@ WS2_32,179,getnameinfo
 WS2_32,180,inet_ntop
 WS2_32,181,inet_pton
 WS2_32,500,WEP
+LMGR8C,189,lp_checkin
+LMGR8C,190,lp_checkout
+LMGR8C,191,lp_errstring
