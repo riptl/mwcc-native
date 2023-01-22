@@ -128,6 +128,39 @@ Modifying the source machine code is not time-effective.
 Thus, our strategy is to strategically relocate mines to vaguely resemble a Windows environment.
 We don't aim to fully reimplement a Windows runtime (Wine already exists), but just enough to get a program running fairly reliably.
 
+**Patching**
+
+The aforementioned `fs` register issue is nontrivial.
+
+IA-32 does not allow writing to the segment register in an unprivileged context.
+Running code with kernel privileges is obviously not an option either.
+
+The fix involves slightly modifying machine code in the `pe2elf` conversion.
+
+We can just patch instructions using `fs:[0]` to `ds:[0]` and then emit a relocation to patch up the offset to `ds:[__pe__tib]`.
+
+On the machine code level, this involves replacing the `0x64` instruction prefix (setting the segment to `fs`) with `0x90` (the nop instruction).
+
+For example
+
+```
+64 a1 00000000   mov eax, dword [fs:0x0]
+```
+
+becomes
+
+```
+90               nop
+a1 00000000      mov eax, dword [ds:0x0]
+```
+
+Note that `pe2elf` implements this patching feature in a brittle/hacky way.
+
+- The TIB is thread-local, but this new data structure is now shared across threads.
+  This breaks any multi-threaded applications.
+- No disassemblers used, just binary search replace.
+- Only the first few kBs of `.text` are covered by patching to avoid false positives.
+
 **Runtime**
 
 WIP
