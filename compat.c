@@ -67,12 +67,13 @@ ADVAPI32_RegOpenKeyExA( uint32_t     h_key,
   default                    : hkey_name = "<unknown>"             ; break;
   }
 
-  fprintf( stderr, "ADVAPI32_RegOpenKeyExA(%s (%p), \"%s\", %x, %x, %p)\n",
-          hkey_name, h_key,
-          lp_sub_key,
-          ul_options,
-          sam_desired,
-          phk_result );
+  //fprintf( stderr, "ADVAPI32_RegOpenKeyExA(%s (%p), \"%s\", %x, %x, %p)\n",
+  //        hkey_name, h_key,
+  //        lp_sub_key,
+  //        ul_options,
+  //        sam_desired,
+  //        phk_result );
+
   return ERROR_ACCESS_DENIED;
 }
 
@@ -124,7 +125,7 @@ __attribute__((stdcall))
 int32_t
 KERNEL32_GetCurrentProcess( void ) {
   int32_t proc = -1;
-  fprintf( stderr, "KERNEL32_GetCurrentProcess() = %d\n", proc );
+  //fprintf( stderr, "KERNEL32_GetCurrentProcess() = %d\n", proc );
   return proc;
 }
 
@@ -149,6 +150,7 @@ KERNEL32_DuplicateHandle( void *   h_source_process_handle,
   if( fd<0 ) {
     fprintf( stderr, "KERNEL32_DuplicateHandle: dup() failed: %s\n",
             strerror( errno ) );
+    g_last_error = ERROR_INVALID_HANDLE;
     return 0;
   }
   *lp_target_handle = fdopen( fd, "r+" );
@@ -284,7 +286,7 @@ KERNEL32_GetCommandLineA( void ) {
   }
   *c = '\0';
 
-  fprintf( stderr, "KERNEL32_GetCommandLineA() = %p\n", cmd );
+  //fprintf( stderr, "KERNEL32_GetCommandLineA() = %p\n", cmd );
   return cmd;
 }
 
@@ -333,7 +335,7 @@ uint32_t
 KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
                                char *   lp_buffer ) {
   fprintf( stderr, "KERNEL32_GetCurrentDirectoryA(%u, %p)\n", n_buffer_length, lp_buffer );
-  snprintf( lp_buffer, n_buffer_length, "." );
+  snprintf( lp_buffer, n_buffer_length, "C:\\Windows\\System32" );
   g_last_error = ERROR_SUCCESS;
   return 0;
 }
@@ -428,7 +430,7 @@ KERNEL32_TlsAlloc( void ) {
   if( index>=COMPAT_TLS_SIZE )
     return TLS_OUT_OF_INDEXES;
   tls_slots[ index ] = 0;
-  fprintf( stderr, "KERNEL32_TlsAlloc() = %d\n", index );
+  //fprintf( stderr, "KERNEL32_TlsAlloc() = %d\n", index );
   return index;
 }
 
@@ -491,9 +493,10 @@ KERNEL32_GetModuleFileNameA( void *   h_module,
 __attribute__((stdcall))
 void *
 KERNEL32_LoadLibraryA( char const * lp_lib_file_name ) {
-  fprintf( stderr, "KERNEL32_LoadLibraryA(\"%s\")\n", lp_lib_file_name );
+  //fprintf( stderr, "KERNEL32_LoadLibraryA(\"%s\")\n", lp_lib_file_name );
   if( strcmp( lp_lib_file_name, __progname )==0 )
     return &g_cur_library;
+  g_last_error = ERROR_FILE_NOT_FOUND;
   return 0;
 }
 
@@ -537,7 +540,7 @@ KERNEL32_GetFullPathNameA( char const * lp_file_name,
           n_buffer_length,
           lp_buffer,
           lp_file_part );
-  uint32_t sz = snprintf( lp_buffer, n_buffer_length, "fuck you" );
+  uint32_t sz = snprintf( lp_buffer, n_buffer_length, "C:\\fuckyou" );
   *lp_file_part = lp_buffer;
   return sz;
 }
@@ -904,7 +907,7 @@ __attribute__((stdcall))
 int
 KERNEL32_GetConsoleScreenBufferInfo( uint32_t h_console_output,
                                      void *   lp_console_screen_buffer_info ) {
-  fprintf( stderr, "KERNEL32_GetConsoleScreenBufferInfo(%u, %p)\n", h_console_output, lp_console_screen_buffer_info );
+  //fprintf( stderr, "KERNEL32_GetConsoleScreenBufferInfo(%u, %p)\n", h_console_output, lp_console_screen_buffer_info );
   
   struct winsize w;
   int res = ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
@@ -1266,12 +1269,6 @@ WS2_32_recv( uint32_t s,
 int
 main( int     argc,
       char ** argv ) {
-  fprintf( stderr, "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
-
-  fprintf( stderr, "__pe_text_start       = %p\n", __pe_text_start       ); // 0x804820f
-  fprintf( stderr, "__pe_data_start       = %p\n", __pe_data_start       ); // 0x82a7024
-  fprintf( stderr, "__pe_data_idata_start = %p\n", __pe_data_idata_start ); // 0x830d424
-
   g_argc = argc;
   g_argv = argv;
 
