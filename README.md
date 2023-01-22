@@ -180,6 +180,14 @@ ABI broadly refers to the assumptions that code makes when interfacing with subr
 This area has been standardized somewhat:
 Function calling conventions used in Windows such as *stdcall*, *cdecl* are supported by GCC on GNU/Linux.
 
+Mixing Win32 and SysV-ABI C code works fine for basic operations like function calls (e.g. no severe stack layout errors).
+
+Unwinding and backtracing is obviously undefined behavior though:
+
+Any unwinding code in Win32 will choke on SysV stack frames at the top,
+Inversely, the `compat.c` DLL functions will fail to unwind Win32 stack frames.
+The latter can probably be fixed though by modifying libunwind.s
+
 ### Background
 
 CodeWarrior is set of tools for compiling C/C++ code for PowerPC.
