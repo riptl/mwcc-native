@@ -327,6 +327,30 @@ KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
 
 __attribute__((stdcall))
 int
+KERNEL32_SetCurrentDirectoryA( char const * lp_path_name ) {
+  fprintf( stderr, "KERNEL32_SetCurrentDirectoryA(%s)\n", lp_path_name );
+  g_last_error = ERROR_ACCESS_DENIED;
+  return 0;
+}
+
+__attribute__((stdcall))
+int
+KERNEL32_GetSystemDefaultLangID( void ) {
+  fprintf( stderr, "KERNEL32_GetSystemDefaultLangID()\n" );
+  return 0;
+}
+
+__attribute__((stdcall))
+int
+KERNEL32_GetShortPathNameA( char const * lpsz_long_path,
+                            char *       lpsz_short_path,
+                            int          cch_buffer ) {
+  fprintf( stderr, "KERNEL32_GetShortPathNameA(%s, %p, %d)\n", lpsz_long_path, lpsz_short_path, cch_buffer );
+  return 0;
+}
+
+__attribute__((stdcall))
+int
 KERNEL32_CreateProcessA( char const * lp_application_name,
                          char *       lp_command_line,
                          void *       lp_process_attributes,
@@ -912,6 +936,13 @@ KERNEL32_FileTimeToLocalFileTime( void const * lp_file_time,
   return 0;
 }
 
+__attribute__((stdcall))
+int
+KERNEL32_IsDBCSLeadByte( uint8_t test_char ) {
+  fprintf( stderr, "KERNEL32_IsDBCSLeadByte(%#x)\n", test_char );
+  return 0;
+}
+
 __attribute__((cdecl))
 int32_t
 LMGR8C_lp_checkout( int32_t v1,
@@ -946,6 +977,27 @@ LMGR8C_lp_errstring( void ) {
   fprintf( stderr, "LMGR8C_lp_errstring()\n" );
   puts(lmgr8c_errbuf);
   return (int32_t)lmgr8c_errbuf;
+}
+
+__attribute__((cdecl))
+int32_t
+LMGR326B_lp_checkin() {
+  fprintf( stderr, "LMGR326B_lp_checkin()\n" );
+  return 0;
+}
+
+__attribute__((cdecl))
+int32_t
+LMGR326B_lp_checkout() {
+  fprintf( stderr, "LMGR326B_lp_checkout()\n" );
+  return 0;
+}
+
+__attribute__((cdecl))
+int32_t
+LMGR326B_lp_errstring() {
+  fprintf( stderr, "LMGR326B_lp_errstring()\n" );
+  return 0;
 }
 
 __attribute__((stdcall))

@@ -128,57 +128,59 @@ func main() {
 	}
 	writer.hdr.Entry = entryVaddr
 
-	var res winres.ResourceSet
+	var strs []string
 	peRes := peFile.Section(".rsrc")
-	rawRsrc, err := peRes.Data()
-	if err != nil {
-		log.Fatal("Failed to read .rsrc: ", err)
-	}
-	if err := res.Read(rawRsrc, peRes.VirtualAddress, winres.ID(0)); err != nil {
-		log.Fatal("Failed to parse .rsrc: ", err)
+	if peRes != nil {
+		var res winres.ResourceSet
+		rawRsrc, err := peRes.Data()
+		if err != nil {
+			log.Fatal("Failed to read .rsrc: ", err)
+		}
+		if err := res.Read(rawRsrc, peRes.VirtualAddress, winres.ID(0)); err != nil {
+			log.Fatal("Failed to parse .rsrc: ", err)
+		}
+
+		escape := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`)
+		var strID uint
+		res.WalkType(winres.RT_STRING, func(resID winres.Identifier, langID uint16, data []byte) bool {
+			bundleID := uint(resID.(winres.ID))
+			_ = bundleID
+			rd := bytes.NewReader(data)
+			for i := uint(0); rd.Len() > 0 && i < 16; i++ {
+				var sz uint16
+				_ = binary.Read(rd, binary.LittleEndian, &sz)
+				if sz == 0 {
+					continue
+				}
+				points := make([]uint16, sz)
+				_ = binary.Read(rd, binary.LittleEndian, &points)
+				runes := utf16.Decode(points)
+				str := string(runes)
+				//strID := (bundleID * 16) + i
+				strID++
+
+				if verbose >= 2 {
+					fmt.Printf(".rsrc str (%d): %s", strID, str)
+				}
+
+				if uint(len(strs)) <= strID {
+					strs = append(strs, make([]string, strID-uint(len(strs))+1)...)
+				}
+				strs[strID] = escape.Replace(str)
+			}
+			return true
+		})
 	}
 
 	cstrTmpl := `/* Generated file */
-int const __pe_str_cnt = {{ . | len }};
-
-char const * const __pe_strs[] = {
-{{- range $i, $x := . }}
-  /*{{ $i | printf "% 4d" }} */ "{{- . -}}",
-{{- end }}
-""
-};`
-
-	escape := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`)
-	var strs []string
-	var strID uint
-	res.WalkType(winres.RT_STRING, func(resID winres.Identifier, langID uint16, data []byte) bool {
-		bundleID := uint(resID.(winres.ID))
-		_ = bundleID
-		rd := bytes.NewReader(data)
-		for i := uint(0); rd.Len() > 0 && i < 16; i++ {
-			var sz uint16
-			_ = binary.Read(rd, binary.LittleEndian, &sz)
-			if sz == 0 {
-				continue
-			}
-			points := make([]uint16, sz)
-			_ = binary.Read(rd, binary.LittleEndian, &points)
-			runes := utf16.Decode(points)
-			str := string(runes)
-			//strID := (bundleID * 16) + i
-			strID++
-
-			if verbose >= 2 {
-				fmt.Printf(".rsrc str (%d): %s", strID, str)
-			}
-
-			if uint(len(strs)) <= strID {
-				strs = append(strs, make([]string, strID-uint(len(strs))+1)...)
-			}
-			strs[strID] = escape.Replace(str)
-		}
-		return true
-	})
+	int const __pe_str_cnt = {{ . | len }};
+	
+	char const * const __pe_strs[] = {
+	{{- range $i, $x := . }}
+	  /*{{ $i | printf "% 4d" }} */ "{{- . -}}",
+	{{- end }}
+	""
+	};`
 
 	tmpl, err := template.New("").Parse(cstrTmpl)
 	if err != nil {

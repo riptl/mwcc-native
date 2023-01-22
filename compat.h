@@ -696,6 +696,24 @@ int
 KERNEL32_FileTimeToLocalFileTime( void const * lp_file_time,
                                   void *       lp_local_file_time );
 
+__attribute__((stdcall))
+int
+KERNEL32_IsDBCSLeadByte( uint8_t test_char );
+
+__attribute__((stdcall))
+int
+KERNEL32_SetCurrentDirectoryA( char const * lp_path_name );
+
+__attribute__((stdcall))
+int
+KERNEL32_GetSystemDefaultLangID( void );
+
+__attribute__((stdcall))
+int
+KERNEL32_GetShortPathNameA( char const * lpsz_long_path,
+                            char *       lpsz_short_path,
+                            int          cch_buffer );
+
 __attribute__((cdecl))
 int32_t
 LMGR8C_lp_checkout( int32_t v1,
@@ -712,6 +730,18 @@ LMGR8C_lp_checkin( int32_t, int32_t, int32_t, int32_t, int32_t, int32_t );
 __attribute__((cdecl))
 int32_t
 LMGR8C_lp_errstring( void );
+
+__attribute__((cdecl))
+int32_t
+LMGR326B_lp_checkin();
+
+__attribute__((cdecl))
+int32_t
+LMGR326B_lp_checkout();
+
+__attribute__((cdecl))
+int32_t
+LMGR326B_lp_errstring();
 
 __attribute__((stdcall))
 int
