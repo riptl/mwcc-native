@@ -6,6 +6,9 @@
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/ioctl.h>
 
 #include "compat.h"
 
@@ -96,7 +99,8 @@ __attribute__((stdcall))
 int32_t
 KERNEL32_IsBadReadPtr( void const * lp,
                        uint32_t     ucb ) {
-  puts( "KERNEL32_IsBadReadPtr" );
+  fprintf( stderr, "KERNEL32_IsBadReadPtr\n" );
+  abort();
   return 1;
 }
 
@@ -112,7 +116,7 @@ KERNEL32_RtlUnwind( void * target_frame,
 __attribute__((stdcall))
 void
 KERNEL32_ExitProcess( uint32_t exit_code ) {
-  fprintf( stderr, "KERNEL32_ExitProcess(%d)\n", exit_code );
+  //fprintf( stderr, "KERNEL32_ExitProcess(%d)\n", exit_code );
   exit( exit_code );
 }
 
@@ -141,7 +145,14 @@ KERNEL32_DuplicateHandle( void *   h_source_process_handle,
           dw_desired_access,
           b_inherit_handle,
           dw_options );
-  return 0;
+  int fd = dup( fileno( (FILE *)h_source_handle ) );
+  if( fd<0 ) {
+    fprintf( stderr, "KERNEL32_DuplicateHandle: dup() failed: %s\n",
+            strerror( errno ) );
+    return 0;
+  }
+  *lp_target_handle = fdopen( fd, "r+" );
+  return 1;
 }
 
 __attribute__((stdcall))
@@ -396,8 +407,14 @@ KERNEL32_GetExitCodeProcess( uint32_t h_process,
 __attribute__((stdcall))
 int
 KERNEL32_CloseHandle( uint32_t h_object ) {
-  fprintf( stderr, "KERNEL32_CloseHandle(%p)\n", h_object );
-  return 0;
+  //fprintf( stderr, "KERNEL32_CloseHandle(%p)\n", h_object );
+  int res = fclose( (FILE *)h_object );
+  if( res<0 ) {
+    g_last_error = ERROR_INVALID_HANDLE;
+    return 0;
+  }
+  g_last_error = ERROR_SUCCESS;
+  return 1;
 }
 
 #define COMPAT_TLS_SIZE 32
@@ -418,7 +435,7 @@ KERNEL32_TlsAlloc( void ) {
 __attribute__((stdcall))
 int
 KERNEL32_TlsFree( uint32_t dw_tls_index ) {
-  fprintf( stderr, "KERNEL32_TlsFree(%u)\n", dw_tls_index );
+  //fprintf( stderr, "KERNEL32_TlsFree(%u)\n", dw_tls_index );
   if( dw_tls_index>=COMPAT_TLS_SIZE )
     return 0;
   g_last_error = ERROR_SUCCESS;
@@ -497,7 +514,7 @@ KERNEL32_GlobalAlloc( uint32_t u_flags,
   if( ptr && (u_flags&0x40)!=0 ) {
     memset( ptr, 0, dw_bytes );
   }
-  fprintf( stderr, "KERNEL32_GlobalAlloc(%#x, %u) = %p\n", u_flags, dw_bytes, ptr );
+  //fprintf( stderr, "KERNEL32_GlobalAlloc(%#x, %u) = %p\n", u_flags, dw_bytes, ptr );
   return (int32_t *)ptr;
 }
 
@@ -556,12 +573,12 @@ KERNEL32_WriteFile( uint32_t     h_file,
   if( lp_number_of_bytes_written ) {
     *lp_number_of_bytes_written = (uint32_t)nbytes;
   }
-  fprintf( stderr, "KERNEL32_WriteFile(%p, \"%s\", %u, %p, %p)\n",
-          h_file,
-          lp_buffer,
-          n_number_of_bytes_to_write,
-          lp_number_of_bytes_written,
-          lp_overlapped );
+  //fprintf( stderr, "KERNEL32_WriteFile(%p, \"%s\", %u, %p, %p)\n",
+  //        h_file,
+  //        lp_buffer,
+  //        n_number_of_bytes_to_write,
+  //        lp_number_of_bytes_written,
+  //        lp_overlapped );
   return 1;
 }
 
@@ -736,7 +753,7 @@ int32_t *
 KERNEL32_GlobalReAlloc( int32_t * h_mem,
                         uint32_t  u_bytes,
                         uint32_t  u_flags ) {
-  fprintf( stderr, "KERNEL32_GlobalReAlloc(%p, %u, %#x)\n", h_mem, u_bytes, u_flags );
+  //fprintf( stderr, "KERNEL32_GlobalReAlloc(%p, %u, %#x)\n", h_mem, u_bytes, u_flags );
   if( u_bytes==0 )
     u_bytes=1;
 
@@ -774,7 +791,7 @@ KERNEL32_GlobalReAlloc( int32_t * h_mem,
 __attribute__((stdcall))
 uint32_t
 KERNEL32_GlobalFlags( int32_t * h_mem ) {
-  fprintf( stderr, "KERNEL32_GlobalFlags(%p)\n", h_mem );
+  //fprintf( stderr, "KERNEL32_GlobalFlags(%p)\n", h_mem );
   return 0;
 }
 
@@ -888,6 +905,17 @@ int
 KERNEL32_GetConsoleScreenBufferInfo( uint32_t h_console_output,
                                      void *   lp_console_screen_buffer_info ) {
   fprintf( stderr, "KERNEL32_GetConsoleScreenBufferInfo(%u, %p)\n", h_console_output, lp_console_screen_buffer_info );
+  
+  struct winsize w;
+  int res = ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
+  if( res<0 ) {
+    console_buf.dwSize.X = 80;
+    console_buf.dwSize.Y = 25;
+  } else {
+    console_buf.dwSize.X = w.ws_col;
+    console_buf.dwSize.Y = w.ws_row;
+  }
+  
   memcpy( lp_console_screen_buffer_info, &console_buf, sizeof(CONSOLE_SCREEN_BUFFER_INFO) );
   return 1;
 }
@@ -977,20 +1005,20 @@ LMGR8C_lp_checkout( int32_t v1,
                     char *  version,
                     int     num_lic,
                     char *  license_file_list ) {
-  fprintf( stderr, "LMGR8C_lp_checkout(%p, %p, \"%s\", \"%s\", %u, \"%s\")\n",
-           v1,
-           policy,
-           feature, 
-           version,
-           num_lic,
-           license_file_list );
+  //fprintf( stderr, "LMGR8C_lp_checkout(%p, %p, \"%s\", \"%s\", %u, \"%s\")\n",
+  //         v1,
+  //         policy,
+  //         feature, 
+  //         version,
+  //         num_lic,
+  //         license_file_list );
   return 0;
 }
 
 __attribute__((cdecl))
 void
 LMGR8C_lp_checkin( void * handle ) {
-  fprintf( stderr, "LMGR8C_lp_checkin(%p)\n", handle );
+  //fprintf( stderr, "LMGR8C_lp_checkin(%p)\n", handle );
 }
 
 static char lmgr8c_errbuf[4096] = {0};
