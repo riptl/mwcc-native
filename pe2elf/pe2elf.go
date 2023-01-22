@@ -424,6 +424,15 @@ func (e *elfWriter) patchMovFs(tibShndx, textShndx int) error {
 		3,
 	)
 
+	// Old:      push dword [fs:0x0]
+	// New: nop; push dword [ds:__pe_tib+0x0]
+	e.patchTib(
+		buf, textShndx, 0, uint32(symIdx),
+		[]byte{0x64, 0xff, 0x35, 0x00, 0x00, 0x00, 0x00},
+		[]byte{0x90, 0xff, 0x35, 0x00, 0x00, 0x00, 0x00},
+		3,
+	)
+
 	// Old:      pop dword [fs:0x0]
 	// New: nop; pop dword [ds:__pe_tib+0x0]
 	e.patchTib(

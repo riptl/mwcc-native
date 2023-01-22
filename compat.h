@@ -724,11 +724,11 @@ LMGR8C_lp_checkout( int32_t v1,
                     char *  license_file_list );
 
 __attribute__((cdecl))
-int32_t
-LMGR8C_lp_checkin( int32_t, int32_t, int32_t, int32_t, int32_t, int32_t );
+void
+LMGR8C_lp_checkin( void * handle );
 
 __attribute__((cdecl))
-int32_t
+char *
 LMGR8C_lp_errstring( void );
 
 __attribute__((cdecl))

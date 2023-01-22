@@ -23,7 +23,7 @@ PE2ELF=$(OUT)/pe2elf
 CFLAGS=
 
 # Derive ELF target names from EXE names
-ALL_EXES:=$(shell find exe -name '*.exe')
+ALL_EXES:=$(shell find -L exe -name '*.exe')
 ALL_ELFS:=$(patsubst exe/%.exe,$(OUT)/%.elf,$(ALL_EXES))
 
 ifeq ($(words $(ALL_EXES)),0)

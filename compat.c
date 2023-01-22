@@ -1,8 +1,10 @@
 #include <assert.h>
+#include <malloc.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <pthread.h>
 
 #include "compat.h"
@@ -209,8 +211,8 @@ KERNEL32_FindFirstFileA( char const * lp_file_name,
 __attribute__((stdcall))
 uint32_t
 KERNEL32_GetFileAttributesA( char const * lp_file_name ) {
-  fprintf( stderr, "KERNEL32_GetFileAttributesA(%s)\n", lp_file_name );
-  return 0;
+  fprintf( stderr, "KERNEL32_GetFileAttributesA(\"%s\")\n", lp_file_name );
+  return 0xFFFFFFFF;
 }
 
 __attribute__((stdcall))
@@ -427,7 +429,7 @@ __attribute__((stdcall))
 uint32_t
 KERNEL32_TlsGetValue( uint32_t dw_tls_index ) {
   uint32_t val = tls_slots[ dw_tls_index ];
-  fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
+  //fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
   g_last_error = ERROR_SUCCESS;
   return val;
 }
@@ -436,7 +438,7 @@ __attribute__((stdcall))
 int
 KERNEL32_TlsSetValue( uint32_t dw_tls_index,
                       uint32_t lp_tls_value ) {
-  fprintf( stderr, "KERNEL32_TlsSetValue(%u, %#x)\n", dw_tls_index, lp_tls_value );
+  //fprintf( stderr, "KERNEL32_TlsSetValue(%u, %#x)\n", dw_tls_index, lp_tls_value );
   tls_slots[ dw_tls_index ] = lp_tls_value;
   g_last_error = ERROR_SUCCESS;
   return 1;
@@ -489,18 +491,21 @@ __attribute__((stdcall))
 int32_t *
 KERNEL32_GlobalAlloc( uint32_t u_flags,
                       uint32_t dw_bytes ) {
+  if( dw_bytes==0 )
+    dw_bytes=1;
   void * ptr = malloc( dw_bytes );
   if( ptr && (u_flags&0x40)!=0 ) {
     memset( ptr, 0, dw_bytes );
   }
-  fprintf( stderr, "KERNEL32_GlobalAlloc(%u, %u) = %p\n", u_flags, dw_bytes, ptr );
+  fprintf( stderr, "KERNEL32_GlobalAlloc(%#x, %u) = %p\n", u_flags, dw_bytes, ptr );
   return (int32_t *)ptr;
 }
 
 __attribute__((stdcall))
 int32_t *
 KERNEL32_GlobalFree( int32_t * h_mem ) {
-  fprintf( stderr, "KERNEL32_GlobalFree(%p)\n", h_mem );
+  //fprintf( stderr, "KERNEL32_GlobalFree(%p)\n", h_mem );
+  free( h_mem );
   return 0;
 }
 
@@ -515,9 +520,9 @@ KERNEL32_GetFullPathNameA( char const * lp_file_name,
           n_buffer_length,
           lp_buffer,
           lp_file_part );
-  snprintf( lp_buffer, n_buffer_length, "fuck you\n" );
-  lp_file_part = &lp_buffer;
-  return 0;
+  uint32_t sz = snprintf( lp_buffer, n_buffer_length, "fuck you" );
+  *lp_file_part = lp_buffer;
+  return sz;
 }
 
 __attribute__((stdcall))
@@ -732,23 +737,44 @@ KERNEL32_GlobalReAlloc( int32_t * h_mem,
                         uint32_t  u_bytes,
                         uint32_t  u_flags ) {
   fprintf( stderr, "KERNEL32_GlobalReAlloc(%p, %u, %#x)\n", h_mem, u_bytes, u_flags );
-  if( !h_mem ) return NULL;
-  static int allocs = 0;
-  void * obj = realloc( h_mem, u_bytes );
-  if( u_bytes==256 ) obj = NULL;
-  if( obj==NULL )
+  if( u_bytes==0 )
+    u_bytes=1;
+
+  /* libc realloc always moves */
+  if( u_flags & 0x02 == 0 ) {
     g_last_error = ERROR_OUTOFMEMORY;
-  else
-    g_last_error = ERROR_SUCCESS;
-  //g_last_error = ERROR_SUCCESS;
+    return NULL;
+  }
+
+  /* Remember occupied byte range if we're instructed to zero */
+  int zero = (u_flags&0x40)!=0;
+  size_t sz_old;
+  if (zero)
+    sz_old = malloc_usable_size( h_mem );
+
+  void * obj = realloc( h_mem, u_bytes );
+
+  if( obj==NULL ) {
+    g_last_error = ERROR_OUTOFMEMORY;
+    return NULL;
+  }
+
+  /* Zero new bytes */
+  g_last_error = ERROR_SUCCESS;
+  if( (u_flags&0x40)!=0 ) {
+    size_t sz_new = malloc_usable_size( obj );
+    if( sz_new>sz_old ) {
+      memset((char*)obj + sz_old, 0, sz_new - sz_old);
+    }
+  }
+  
   return obj;
 }
 
 __attribute__((stdcall))
 uint32_t
 KERNEL32_GlobalFlags( int32_t * h_mem ) {
-  //fprintf( stderr, "KERNEL32_GlobalFlags(%p)\n", h_mem );
-  if( !h_mem ) return GMEM_INVALID_HANDLE;
+  fprintf( stderr, "KERNEL32_GlobalFlags(%p)\n", h_mem );
   return 0;
 }
 
@@ -837,7 +863,7 @@ __attribute__((stdcall))
 uint32_t
 KERNEL32_GetSystemDirectoryA( char * lp_buffer,
                               uint32_t u_size ) {
-  fprintf( stderr, "KERNEL32_GetSystemDirectoryA(%p, %u)\n", lp_buffer, u_size );
+  //fprintf( stderr, "KERNEL32_GetSystemDirectoryA(%p, %u)\n", lp_buffer, u_size );
   return snprintf( lp_buffer, u_size, "C:\\Windows\\System32" );
 }
 
@@ -962,21 +988,20 @@ LMGR8C_lp_checkout( int32_t v1,
 }
 
 __attribute__((cdecl))
-int32_t
-LMGR8C_lp_checkin( int32_t v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6 ) {
-  fprintf( stderr, "LMGR8C_lp_checkin(%p, %p, \"%s\", %p, %p, %s)\n", v1, v2, v3, v4, v5, v6 );
-  return 0;
+void
+LMGR8C_lp_checkin( void * handle ) {
+  fprintf( stderr, "LMGR8C_lp_checkin(%p)\n", handle );
 }
 
 static char lmgr8c_errbuf[4096] = {0};
 
 /* lp_errstring	*/
 __attribute__((cdecl))
-int32_t
+char *
 LMGR8C_lp_errstring( void ) {
   fprintf( stderr, "LMGR8C_lp_errstring()\n" );
-  puts(lmgr8c_errbuf);
-  return (int32_t)lmgr8c_errbuf;
+  snprintf( lmgr8c_errbuf, sizeof(lmgr8c_errbuf), "Hello!" );
+  return lmgr8c_errbuf;
 }
 
 __attribute__((cdecl))
