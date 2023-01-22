@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -19,28 +20,83 @@ static int g_last_error = ERROR_SUCCESS;
 static int g_cur_module;
 static int g_cur_library;
 
-typedef struct _COORD {
-  uint16_t X;
-  uint16_t Y;
-} COORD, *PCOORD;
+static __thread uint32_t win_last_error;
 
-typedef struct _SMALL_RECT {
-  uint16_t Left;
-  uint16_t Top;
-  uint16_t Right;
-  uint16_t Bottom;
-} SMALL_RECT;
+static FORCEINLINE HANDLE WINAPI GetProcessHeap(void)
+{
+    return ((HANDLE **)NtCurrentTeb())[12][6];
+}
 
-struct _CONSOLE_SCREEN_BUFFER_INFO {
-  COORD      dwSize;
-  COORD      dwCursorPosition;
-  uint32_t   wAttributes;
-  SMALL_RECT srWindow;
-  COORD      dwMaximumWindowSize;
-};
-typedef struct _CONSOLE_SCREEN_BUFFER_INFO CONSOLE_SCREEN_BUFFER_INFO;
+static inline void SetLastError( uint32_t err )
+{
+  win_last_error = err;
+}
 
-static CONSOLE_SCREEN_BUFFER_INFO console_buf = {0};
+ SECTION_IMAGE_INFORMATION main_image_info = { NULL };
+HMODULE ntdll_module = 0;
+SYSTEM_SERVICE_TABLE KeServiceDescriptorTable[4];
+
+USHORT native_machine = 0;
+BOOL process_exiting = FALSE;
+sigset_t server_block_set;
+int is_wow64 = 0;
+SYSTEM_CPU_INFORMATION cpu_info;
+
+NTSYSAPI NTSTATUS WINAPI NtOpenSection(HANDLE*,ACCESS_MASK,const OBJECT_ATTRIBUTES*) {
+  puts( "NtOpenSection" );
+  return 0;
+}
+
+
+NTSYSAPI NTSTATUS WINAPI NtQueryInformationProcess(HANDLE,PROCESSINFOCLASS,PVOID,ULONG,PULONG) {
+  puts( "NtQueryInformationProcess" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI NtTerminateProcess(HANDLE,LONG) {
+  puts( "NtTerminateProcess" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI NtWaitForSingleObject(HANDLE,BOOLEAN,const LARGE_INTEGER*) {
+  puts( "NtWaitForSingleObject" );
+  return 0;
+}
+
+NTSYSAPI ULONG WINAPI RtlGetNtGlobalFlags(void) {
+  puts( "RtlGetNtGlobalFlags" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI NtContinue(PCONTEXT,BOOLEAN) {
+  puts( "NtContinue" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI NtOpenProcess(PHANDLE,ACCESS_MASK,const OBJECT_ATTRIBUTES*,const CLIENT_ID*) {
+  puts( "NtOpenProcess" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI NtClose(HANDLE) {
+  puts( "NtClose" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI NtQuerySystemInformation(SYSTEM_INFORMATION_CLASS,PVOID,ULONG,PULONG) {
+  puts( "NtQuerySystemInformation" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI RtlInitializeCriticalSection(RTL_CRITICAL_SECTION *) {
+  puts( "RtlInitializeCriticalSection" );
+  return 0;
+}
+
+NTSYSAPI NTSTATUS  WINAPI RtlDeleteCriticalSection(RTL_CRITICAL_SECTION *) {
+  puts( "RtlDeleteCriticalSection" );
+  return 0;
+}
 
 __attribute__((stdcall))
 int32_t
@@ -52,13 +108,13 @@ ADVAPI32_RegOpenKeyExA( uint32_t     h_key,
 
   char const * hkey_name;
   switch( h_key ) {
-  case HKEY_CLASSES_ROOT     : hkey_name = "HKEY_CLASSES_ROOT"     ; break;
-  case HKEY_CURRENT_USER     : hkey_name = "HKEY_CURRENT_USER"     ; break;
-  case HKEY_LOCAL_MACHINE    : hkey_name = "HKEY_LOCAL_MACHINE"    ; break;
-  case HKEY_USERS            : hkey_name = "HKEY_USERS"            ; break;
-  case HKEY_PERFORMANCE_DATA : hkey_name = "HKEY_PERFORMANCE_DATA" ; break;
-  case HKEY_CURRENT_CONFIG   : hkey_name = "HKEY_CURRENT_CONFIG"   ; break;
-  case HKEY_DYN_DATA         : hkey_name = "HKEY_DYN_DATA"         ; break;
+  case (uint32_t)HKEY_CLASSES_ROOT     : hkey_name = "HKEY_CLASSES_ROOT"     ; break;
+  case (uint32_t)HKEY_CURRENT_USER     : hkey_name = "HKEY_CURRENT_USER"     ; break;
+  case (uint32_t)HKEY_LOCAL_MACHINE    : hkey_name = "HKEY_LOCAL_MACHINE"    ; break;
+  case (uint32_t)HKEY_USERS            : hkey_name = "HKEY_USERS"            ; break;
+  case (uint32_t)HKEY_PERFORMANCE_DATA : hkey_name = "HKEY_PERFORMANCE_DATA" ; break;
+  case (uint32_t)HKEY_CURRENT_CONFIG   : hkey_name = "HKEY_CURRENT_CONFIG"   ; break;
+  case (uint32_t)HKEY_DYN_DATA         : hkey_name = "HKEY_DYN_DATA"         ; break;
   default                    : hkey_name = "<unknown>"             ; break;
   }
 
@@ -271,7 +327,7 @@ KERNEL32_GetCommandLineA( void ) {
   }
   *c = '\0';
 
-  fprintf( stderr, "KERNEL32_GetCommandLineA() = %p\n", cmd );
+  fprintf( stderr, "KERNEL32_GetCommandLineA() = %s\n", cmd );
   return cmd;
 }
 
@@ -427,7 +483,7 @@ __attribute__((stdcall))
 uint32_t
 KERNEL32_TlsGetValue( uint32_t dw_tls_index ) {
   uint32_t val = tls_slots[ dw_tls_index ];
-  fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
+  //fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
   g_last_error = ERROR_SUCCESS;
   return val;
 }
@@ -516,7 +572,7 @@ KERNEL32_GetFullPathNameA( char const * lp_file_name,
           lp_buffer,
           lp_file_part );
   snprintf( lp_buffer, n_buffer_length, "fuck you\n" );
-  lp_file_part = &lp_buffer;
+  *lp_file_part = lp_buffer;
   return 0;
 }
 
@@ -857,6 +913,8 @@ KERNEL32_SetConsoleCtrlHandler( void * lp_handler_routine,
   return 0;
 }
 
+static CONSOLE_SCREEN_BUFFER_INFO console_buf;
+
 __attribute__((stdcall))
 int
 KERNEL32_GetConsoleScreenBufferInfo( uint32_t h_console_output,
@@ -962,21 +1020,20 @@ LMGR8C_lp_checkout( int32_t v1,
 }
 
 __attribute__((cdecl))
-int32_t
-LMGR8C_lp_checkin( int32_t v1, int32_t v2, int32_t v3, int32_t v4, int32_t v5, int32_t v6 ) {
-  fprintf( stderr, "LMGR8C_lp_checkin(%p, %p, \"%s\", %p, %p, %s)\n", v1, v2, v3, v4, v5, v6 );
-  return 0;
+void
+LMGR8C_lp_checkin( void * handle ) {
+  fprintf( stderr, "LMGR8C_lp_checkin(%p)\n", handle );
 }
 
 static char lmgr8c_errbuf[4096] = {0};
 
 /* lp_errstring	*/
 __attribute__((cdecl))
-int32_t
+char *
 LMGR8C_lp_errstring( void ) {
   fprintf( stderr, "LMGR8C_lp_errstring()\n" );
-  puts(lmgr8c_errbuf);
-  return (int32_t)lmgr8c_errbuf;
+  snprintf( lmgr8c_errbuf, sizeof(lmgr8c_errbuf), "fuck you" );
+  return lmgr8c_errbuf;
 }
 
 __attribute__((cdecl))
@@ -1210,17 +1267,250 @@ WS2_32_recv( uint32_t s,
   return 0;
 }
 
+/* Stub NT functions */
+
+NTSYSAPI NTSTATUS WINAPI RtlEnterCriticalSection(RTL_CRITICAL_SECTION *) { return STATUS_SUCCESS; }
+NTSYSAPI NTSTATUS WINAPI RtlLeaveCriticalSection(RTL_CRITICAL_SECTION *) { return STATUS_SUCCESS; }
+
+NTSYSAPI void WINAPI RtlRaiseStatus(NTSTATUS status) {
+  fprintf( stderr, "RtlRaiseStatus: %d\n", status );
+  abort();
+}
+
+/*********************************************************************************************
+ * Copied from Wine: dlls/ntdll
+ *********************************************************************************************/
+
+#include "wine/dlls/ntdll/error.c"
+#include "wine/dlls/ntdll/heap.c"
+#include "wine/dlls/ntdll/unix/env.c"
+#include "wine/dlls/ntdll/unix/thread.c"
+#include "wine/dlls/ntdll/unix/virtual.c"
+#include "wine/dlls/ntdll/unix/signal_i386.c"
+
+/*********************************************************************************************
+ * Copied from Wine: dlls/kernelbase/memory.c
+ *********************************************************************************************/
+
+#include "wine/dlls/kernel32/kernel_private.h"
+
+/* some undocumented flags (names are made up) */
+#define HEAP_ADD_USER_INFO    0x00000100
+
+#define MEM_FLAG_USED        1
+#define MEM_FLAG_MOVEABLE    2
+#define MEM_FLAG_DISCARDABLE 4
+#define MEM_FLAG_DISCARDED   8
+#define MEM_FLAG_DDESHARE    0x8000
+
+struct mem_entry
+{
+    union
+    {
+        struct
+        {
+            WORD flags;
+            BYTE lock;
+        };
+        void *next_free;
+    };
+    void *ptr;
+};
+
+C_ASSERT(sizeof(struct mem_entry) == 2 * sizeof(void *));
+
+struct kernelbase_global_data *kernelbase_global_data;
+
+static inline struct mem_entry *unsafe_mem_from_HLOCAL( HLOCAL handle )
+{
+    struct mem_entry *mem = CONTAINING_RECORD( *(volatile HANDLE *)&handle, struct mem_entry, ptr );
+    struct kernelbase_global_data *data = kernelbase_global_data;
+    if (((UINT_PTR)handle & ((sizeof(void *) << 1) - 1)) != sizeof(void *)) return NULL;
+    if (mem < data->mem_entries || mem >= data->mem_entries_end) return NULL;
+    if (!(mem->flags & MEM_FLAG_USED)) return NULL;
+    return mem;
+}
+
+static inline void *unsafe_ptr_from_HLOCAL( HLOCAL handle )
+{
+    if (((UINT_PTR)handle & ((sizeof(void *) << 1) - 1))) return NULL;
+    return handle;
+}
+
+/*********************************************************************************************
+ * Copied from Wine: dlls/kernelbase/memory.c
+ *********************************************************************************************/
+
+LPVOID WINAPI DECLSPEC_HOTPATCH LocalLock( HLOCAL handle )
+{
+    HANDLE heap = GetProcessHeap();
+    struct mem_entry *mem;
+    void *ret = NULL;
+
+    if (!handle) return NULL;
+    if ((ret = unsafe_ptr_from_HLOCAL( handle )))
+    {
+        return ret;
+    }
+
+    RtlLockHeap( heap );
+    if ((mem = unsafe_mem_from_HLOCAL( handle )))
+    {
+        if (!(ret = mem->ptr)) SetLastError( ERROR_DISCARDED );
+        else if (!++mem->lock) mem->lock--;
+    }
+    else
+    {
+        SetLastError( ERROR_INVALID_HANDLE );
+    }
+    RtlUnlockHeap( heap );
+
+    return ret;
+}
+
+BOOL WINAPI DECLSPEC_HOTPATCH LocalUnlock( HLOCAL handle )
+{
+    HANDLE heap = GetProcessHeap();
+    struct mem_entry *mem;
+    BOOL ret = FALSE;
+
+    TRACE_(globalmem)( "handle %p\n", handle );
+
+    if (unsafe_ptr_from_HLOCAL( handle ))
+    {
+        SetLastError( ERROR_NOT_LOCKED );
+        return FALSE;
+    }
+
+    RtlLockHeap( heap );
+    if ((mem = unsafe_mem_from_HLOCAL( handle )))
+    {
+        if (mem->lock)
+        {
+            ret = (--mem->lock != 0);
+            if (!ret) SetLastError( NO_ERROR );
+        }
+        else
+        {
+            WARN_(globalmem)( "handle %p not locked\n", handle );
+            SetLastError( ERROR_NOT_LOCKED );
+        }
+    }
+    else
+    {
+        WARN_(globalmem)( "invalid handle %p\n", handle );
+        SetLastError( ERROR_INVALID_HANDLE );
+    }
+    RtlUnlockHeap( heap );
+
+    return ret;
+}
+
+/*********************************************************************************************
+ * Copied from Wine: dlls/kernel32/heap.c
+ *********************************************************************************************/
+
+__attribute__((stdcall))
+void *
+KERNEL32_GlobalLock( void * handle ) {
+  return LocalLock( handle );
+}
+
+__attribute__((stdcall))
+int
+KERNEL32_GlobalUnlock( void * handle ) {
+  if (unsafe_ptr_from_HLOCAL( handle )) return 1;
+  return LocalUnlock( handle );
+}
+
+/*********************************************************************************************
+ * Entrypoint
+ *********************************************************************************************/
+
 int
 main( int     argc,
       char ** argv ) {
-  fprintf( stderr, "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
+  //fprintf( stderr, "__builtin_return_address() = %p\n", __builtin_return_address( 0 ) );
 
-  fprintf( stderr, "__pe_text_start       = %p\n", __pe_text_start       ); // 0x804820f
-  fprintf( stderr, "__pe_data_start       = %p\n", __pe_data_start       ); // 0x82a7024
-  fprintf( stderr, "__pe_data_idata_start = %p\n", __pe_data_idata_start ); // 0x830d424
+  //fprintf( stderr, "__pe_text_start       = %p\n", __pe_text_start       ); // 0x804820f
+  //fprintf( stderr, "__pe_data_start       = %p\n", __pe_data_start       ); // 0x82a7024
+  //fprintf( stderr, "__pe_data_idata_start = %p\n", __pe_data_idata_start ); // 0x830d424
 
   g_argc = argc;
   g_argv = argv;
 
   __pe_text_start_enter();
 }
+
+
+unsigned int CDECL wine_server_call( void *req_ptr ) {
+  puts( "wine_server_call" );
+  return 0;
+}
+
+void server_enter_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset ) {
+  puts( "server_enter_uninterrupted_section" );
+}
+
+void server_leave_uninterrupted_section( pthread_mutex_t *mutex, sigset_t *sigset ) {
+  puts( "server_leave_uninterrupted_section" );
+}
+
+ void server_init_thread( void *entry_point, BOOL *suspend ) {
+  puts( "server_init_thread" );
+}
+ int server_pipe( int fd[2] ) {
+  puts( "server_pipe" );
+  return 0;
+ }
+
+
+extern unsigned int server_call_unlocked( void *req_ptr ) {
+  puts( "server_call_unlocked" );
+  return 0;
+} 
+
+extern int server_get_unix_fd( HANDLE handle, unsigned int wanted_access, int *unix_fd,
+                               int *needs_close, enum server_fd_type *type, unsigned int *options ) {
+  puts( "server_get_unix_fd" );
+}
+
+extern unsigned int server_queue_process_apc( HANDLE process, const apc_call_t *call,
+                                              apc_result_t *result ) {
+  puts( "server_queue_process_apc" );
+}
+
+extern unsigned int server_select( const select_op_t *select_op, data_size_t size, UINT flags,
+                                   timeout_t abs_timeout, context_t *context, user_apc_t *user_apc ) {
+  puts( "server_select" );
+} 
+
+extern void wine_server_send_fd( int fd ) {
+  puts( "wine_server_send_fd" );
+} 
+
+
+
+const unixlib_entry_t __wine_unix_call_funcs[] = {};
+
+void     (WINAPI *pDbgUiRemoteBreakin)( void *arg ) = NULL;
+NTSTATUS (WINAPI *pKiRaiseUserExceptionDispatcher)(void) = NULL;
+NTSTATUS (WINAPI *pKiUserExceptionDispatcher)(EXCEPTION_RECORD*,CONTEXT*) = NULL;
+void     (WINAPI *pKiUserApcDispatcher)(CONTEXT*,ULONG_PTR,ULONG_PTR,ULONG_PTR,PNTAPCFUNC) = NULL;
+void     (WINAPI *pKiUserCallbackDispatcher)(ULONG,void*,ULONG) = NULL;
+void     (WINAPI *pLdrInitializeThunk)(CONTEXT*,void**,ULONG_PTR,ULONG_PTR) = NULL;
+void     (WINAPI *pRtlUserThreadStart)( PRTL_THREAD_START_ROUTINE entry, void *arg ) = NULL;
+void     (WINAPI *p__wine_ctrl_routine)(void*);
+SYSTEM_DLL_INIT_BLOCK *pLdrSystemDllInitBlock = NULL;
+
+BOOL xstate_compaction_enabled = FALSE;
+
+unsigned int alloc_object_attributes( const OBJECT_ATTRIBUTES *attr, struct object_attributes **ret,
+                                             data_size_t *ret_len ){
+  puts( "alloc_object_attributes" );
+                                             }
+
+NTSTATUS load_builtin( const pe_image_info_t *image_info, WCHAR *filename,
+                              void **addr_ptr, SIZE_T *size_ptr, ULONG_PTR zero_bits ) {
+  puts( "load_builtin" );
+                              }

@@ -23,7 +23,7 @@ PE2ELF=$(OUT)/pe2elf
 CFLAGS=
 
 # Derive ELF target names from EXE names
-ALL_EXES:=$(shell find exe -name '*.exe')
+ALL_EXES:=$(shell find exe -type f -name '*.exe')
 ALL_ELFS:=$(patsubst exe/%.exe,$(OUT)/%.elf,$(ALL_EXES))
 
 ifeq ($(words $(ALL_EXES)),0)
@@ -46,7 +46,7 @@ $(OUT)/%.gen.bin.o $(OUT)/%.gen.str.c: $(EXE)/%.exe $(PE2ELF) | $(OUT)
 	$(PE2ELF) -i $< -o $(patsubst %.str.c,%.bin.o,$@) -out-cstr $(patsubst %.bin.o,%.str.c,$@) 
 
 $(OUT)/compat.o: compat.c compat.h | $(OUT)
-	$(CC) $(CFLAGS) -static -no-pie -c -o $@ $<
+	$(CC) $(CFLAGS) -static -no-pie -isystem wine -c -o $@ $<
 
 $(OUT)/pe2elf: $(shell find pe2elf -name '*.go') pe2elf/ordinals.csv | $(OUT)
 	cd pe2elf && $(GO) build -o $(shell realpath $(OUT))/pe2elf -buildvcs=false .
