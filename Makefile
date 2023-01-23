@@ -52,8 +52,9 @@ $(OUT)/pe2elf: $(shell find pe2elf -name '*.go') pe2elf/ordinals.csv | $(OUT)
 	cd pe2elf && $(GO) build -o $(shell realpath $(OUT))/pe2elf -buildvcs=false .
 
 $(OUT):
-	mkdir -p $(OUT)
+	mkdir -p "$(OUT)"
 
 .PHONY: clean
 clean:
-	find $(OUT) \( -name "*.gen.*" -o -name "*.elf" \) -print -delete
+	@if test -d "$(OUT)"; then find "$(OUT)" \( -name "*.elf" -o -name "*.o" -o -name "pe2elf" \) -print -delete; fi
+	@if test -d "$(OUT)"; then find "$(OUT)" && find "$(OUT)" -type d -empty -print -delete; fi

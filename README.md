@@ -24,6 +24,50 @@ This integration is about 30% done.
 - [ ] Implement file I/O
 - ...
 
+### Support Matrix
+
+File I/O not yet implemented, so no compiler conversion is functional yet.
+
+Checking if the `-help` page works is useful for checking runtime compatibility.
+
+| Target | Tool        | Version         | Runtime Built       | `-help`    | SHA-256                                                            |
+|--------|-------------|-----------------|---------------------|------------|--------------------------------------------------------------------|
+| EPPC   | `mwasmeppc` | 2.3.2 build 106 | 2000-06-02 15:30:53 | ☠️ SIGSEGV | `e0e744b22b84c1342632c9a9331611443ce849c63165d7f1039cb004099b6ae7` |
+| EPPC   | `mwldeppc`  | 2.3.3 build 126 | 2000-03-21 19:00:24 | ❌ assert   | `33ebb6f0bbd9d8ef00bf9b4a5e1e2b18abd8c8cd832b78eaa4453fec1d3ecd78` |
+| EPPC   | `mwldeppc`  | 2.3.3 build 137 | 2001-02-07 12:15:53 | ❌ assert   | `d9f0804564424a299b42a6577a252d18748cfa2f069128c3c938ed4d5f4aa8b5` |
+| EPPC   | `mwcceppc`  | 2.3.3 build 144 | 2000-04-13 14:30:41 | ❌ assert   | `646a07efa700f7e82141124830a025d723e96950c48c116035b8b4948c4e23d6` |
+| EPPC   | `mwcceppc`  | 2.3.3 build 159 | 2001-02-07 12:08:38 | ❌ assert   | `f3a87d502d785ab132a775fb05d041e34ca96072f21421c36f357fee9a1db8d7` |
+| EPPC   | `mwcceppc`  | 2.3.3 build 163 | 2001-04-23 10:58:30 | ❌ assert   | `0443b5c02b1aa7b575b61e0e24c4d5ad6bed8fd54cc42de5a2204a5216001914` |
+| EPPC   | `mwldeppc`  | 2.4.1 build 47  | 2001-06-12 11:53:24 | ?          | `ac9ac8239e769e7f8bc57bdcf2439cf48b85c56bbea71e7c58a0f1116ac863b3` |
+| EPPC   | `mwcceppc`  | 2.4.2 build 81  | 2002-05-07 23:39:33 | ?          | `7cbae0a5bd81e07d7fa8975bbc4e969b5dea265cc29c5ee6bae0453a6e25f225` |
+| EPPC   | `mwldeppc`  | 2.4.2 build 81  | 2002-05-07 23:43:34 | ?          | `db65216a7ed5a457bca8b1c1e28bdf64bb085deb4f90dbaa0a83c79abfd61ea4` |
+| EPPC   | `mwcceppc`  | 2.4.2 build 92  | 2002-09-16 15:14:48 | ✅          | `b79ee3e358fe18d7b492c3400169efc1a9bc5dff1a120dcb025f7869ab772022` |
+| EPPC   | `mwldeppc`  | 2.4.7 build 92  | 2002-09-16 15:15:26 | ?          | `58a2a3328e58f8118957113fe487df990d2d09b138b0d08a3c4c54d93b5ffe58` |
+| EPPC   | `mwcceppc`  | 2.4.7 build 102 | 2002-11-07 12:45:57 | ✅          | `f0390716889e7dd6d2ee00a393471ce9d5bdbb171a02a44c21c28e928abe603d` |
+| EPPC   | `mwcceppc`  | 2.4.7 build 105 | 2003-02-20 14:21:02 | ✅          | `f68a29252b1f79d820f36184912d2163082d4bb4c394559586bf7276878c6248` |
+| EPPC   | `mwcceppc`  | 2.4.7 build 107 | 2003-07-14 14:19:11 | ?          | `316e2a98236c23f3fc902243b157eaebf8ef2ad6edb88cfd632a15b6676fa9a8` |
+| EPPC   | `mwldeppc`  | 2.4.7 build 107 | 2003-07-14 14:20:31 | ?          | `37818faa6e510d3ab92629f0a6c4334cfca0ca943fba0a0d61626f7f9379077d` |
+| EPPC   | `mwcceppc`  | 2.4.7 build 108 | 2004-07-22 17:19:15 | ?          | `04ece8178961bdbaeebe2d4e5922ed542c4d82b2fc3de996c41c9e193bd49eea` |
+| EPPC   | `mwldeppc`  | 3.0.4           | 2004-08-13 10:40:59 | ?          | `424a7fadaee47abc4406c7145bface744e8dbc7f7c35922ca70ee647a1bee2f4` |
+| EPPC   | `mwasmeppc` | 4.0 build 50315 | 2005-03-15 23:48:10 | ?          | `edd3ba317e1d630382066a879806d9ce7bbf23980a813731ab69c1fd03623ca0` |
+| EPPC   | `mwldeppc`  | 4.1 build 51213 | 2005-12-13 17:41:17 | ?          | `bfd8c61af520d2a3a771d8e8733099af48d10223c80c2952d3a1fe0548247906` |
+| EPPC   | `mwcceppc`  | 4.1 build 60126 | 2006-01-26 08:43:54 | ?          | `f9fe7fc263792af500d955f68bf2ceff4b2a81c0067129df75e7920092e7f792` |
+| EPPC   | `mwcceppc`  | 4.1 build 60831 | 2006-08-31 18:18:06 | ?          | `bfa9fd1794736e0aaa937ad8786956b2bc5cd7fddcc6fe20af45798812e1918d` |
+| EPPC   | `mwasmeppc` | 4.2 build 142   | 2008-08-26 02:27:18 | ☠️ SIGSEGV | `e6913e71b836b12c59c7823688ac568c05ef8c5b63cfe3ae3c19582f395ae8aa` |
+| EPPC   | `mwcceppc`  | 4.2 build 142   | 2008-08-26 02:32:39 | ✅          | `edc130f6843d61f1374d071c820bcc5bf20acb7cc50733bd95bb189636214e54` |
+| EPPC   | `mwldeppc`  | 4.2 build 142   | 2008-08-26 02:33:56 | ✅          | `4abefbf70c469e721de57624e413cd299a9e1bc10b8954021ba3963274aa14ac` |
+| EPPC   | `mwasmeppc` | 4.2 build 60320 | 2006-03-20 23:12:52 | ?          | `c91357746ab1672bb4cbef21e3e0faf33c81f2f32857df4aa97f1cf26692eb01` |
+| EPPC   | `mwldeppc`  | 4.2 build 60320 | 2006-03-20 23:19:16 | ?          | `92087f56db8bc0c8bc61caac2ec3309a5c8bf3745cb19c7c125283b55758925c` |
+| EPPC   | `mwasmeppc` | 4.3 build 151   | 2009-04-02 14:58:50 | ☠️ SIGILL  | `ebed00bb423c71a34e9aa4f52897e2d691c9f8e67a2403b1c246872049fd820c` |
+| EPPC   | `mwcceppc`  | 4.3 build 151   | 2009-04-02 15:04:17 | ✅          | `14f99570099c6ddee35759d7f9f668ee014c460758f89e0cdf2a51f8f4d8fbe5` |
+| EPPC   | `mwldeppc`  | 4.3 build 151   | 2009-04-02 15:05:36 | ✅          | `ad6746c6add523db1893c7351e27c535cf608d539313f8936b02df896bbc5a76` |
+| EPPC   | `mwasmeppc` | 4.3 build 172   | 2010-04-23 11:35:15 | ☠️ SIGSEGV | `a25fa9c34bfb6d5f1cb6b8dc7b655be3d4f167edc5eb4897a49e96b78e3bf952` |
+| EPPC   | `mwcceppc`  | 4.3 build 172   | 2010-04-23 11:38:37 | ✅          | `1c5b66edecd72688443bbaa81879387a019c8d8821e1f66193987c39e9469dd9` |
+| EPPC   | `mwldeppc`  | 4.3 build 172   | 2010-04-23 11:39:30 | ✅          | `46483da7f98e9968c4a4ffd0dee69f9cc769737fbd0970632b1517a6dc275bfd` |
+| EPPC   | `mwasmeppc` | 4.3 build 213   | 2011-09-05 12:57:32 | ☠️ SIGSEGV | `e53dc0479e6bcc50caf5dc8ca36ddcdd537de6f233f0dcb1a6bbeace082c5343` |
+| EPPC   | `mwcceppc`  | 4.3 build 213   | 2011-09-05 13:01:10 | ✅          | `f54d5644d14609f385e8fefd3eb11e50a689b888a0d06dfc0a30cf0fc5a204d7` |
+| EPPC   | `mwldeppc`  | 4.3 build 213   | 2011-09-05 13:02:03 | ✅          | `8518d2471e0b08a856c942fe1ffcabe8864b6b2571bbd277716c1b03c1996c17` |
+
 **Demo**
 
 This demo requires `mwcceppc.exe` version `4199_60831`.
