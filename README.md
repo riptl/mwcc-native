@@ -11,19 +11,6 @@ This project converts several Windows-only Metrowerks CodeWarrior tools into sta
   - Go 1.16 and above is known to work
   - No external dependencies :)
 
-### Status
-
-This integration is about 30% done.
-- [x] PE to ELF conversion
-- [x] ELF relocations
-- [x] Scaffold for compatibility module containing Windows library calls
-- [x] Demo 
-- [ ] PE symbol maps
-- [x] Runtime environment for entering Windows `main()`
-- [x] Implement console logging
-- [ ] Implement file I/O
-- ...
-
 ### Support Matrix
 
 File I/O not yet implemented, so no compiler conversion is functional yet.
