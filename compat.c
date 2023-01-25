@@ -559,12 +559,12 @@ KERNEL32_FindClose( uint32_t h_find_file ) {
 __attribute__((stdcall))
 uint32_t
 KERNEL32_GetFileAttributesA( char const * lp_file_name ) {
-  /* Special case: Check if current program */
+  /* Special case: Check if program requested */
   static char sys32[] = "C:\\Windows\\System32\\";
-  if( 0==strncmp( lp_file_name,                                      sys32,      strlen( sys32      ) ) &&
-      0==strncmp( lp_file_name+strlen( sys32 ),                      __progname, strlen( __progname ) ) &&
-      0==strcmp ( lp_file_name+strlen( sys32 )+strlen( __progname ), ".exe" ) ) {
-    LOG_TRACE(( "KERNEL32_GetFileAttributesA: %s is current program", lp_file_name ));
+  if( 0==strncmp( lp_file_name, sys32, strlen( sys32 ) ) &&
+      !strchr( lp_file_name+strlen( sys32 ), '\\' ) &&
+      strstr( lp_file_name+strlen( sys32 ), ".elf.exe" ) ) {
+    LOG_TRACE(( "KERNEL32_GetFileAttributesA: asking for program %s", lp_file_name ));
     g_last_error = ERROR_SUCCESS;
     return FILE_ATTRIBUTE_NORMAL;
   }
@@ -770,6 +770,10 @@ KERNEL32_GetShortPathNameA( char const * lpsz_long_path,
   return 0;
 }
 
+/********************************************************************************
+   Process Launching
+ ********************************************************************************/
+
 __attribute__((stdcall))
 int
 KERNEL32_CreateProcessA( char const * lp_application_name,
@@ -782,7 +786,36 @@ KERNEL32_CreateProcessA( char const * lp_application_name,
                          char const * lp_current_directory,
                          void *       lp_startup_info,
                          void *       lp_process_information ) {
-  fprintf( stderr, "KERNEL32_CreateProcessA(%p, %p, %p, %p, %d, %u, %p, %p, %p, %p)\n",
+  if( 0!=strncmp( "C:\\Windows\\System32\\", lp_application_name, 20 ) ) {
+    LOG_ERR(( "KERNEL32_CreateProcessA: Refusing to launch %s", lp_application_name ));
+    g_last_error = ERROR_ACCESS_DENIED;
+    return 0;
+  }
+
+  char progname[ 256 ];
+  strncpy( progname, lp_application_name+20, sizeof(progname)-1 );
+
+  char * exe_ext = strstr( progname, ".exe" );
+  if( exe_ext ) *exe_ext = '\0';
+
+  LOG_INFO(( "KERNEL32_CreateProcessA: Launching %s", progname ));
+
+  pid_t child = fork();
+  if( child==0 ) {
+    char * const argv[2] = {
+      progname,
+      NULL
+    };
+    int res = execv( progname, argv );
+    if( res<0 ) {
+      LOG_ERR(( "KERNEL32_CreateProcessA: execv(\"%s\") failed: %s", progname, strerror( errno ) ));
+      exit( 127 );
+    }
+    exit( 0 );
+    __builtin_unreachable();
+  }
+
+  fprintf( stderr, "KERNEL32_CreateProcessA(\"%s\", \"%s\", %p, %p, %d, %u, %p, \"%s\", %p, %p)",
           lp_application_name,
           lp_command_line,
           lp_process_attributes,
@@ -793,7 +826,7 @@ KERNEL32_CreateProcessA( char const * lp_application_name,
           lp_current_directory,
           lp_startup_info,
           lp_process_information );
-  return 0;
+  return 1;
 }
 
 __attribute__((stdcall))
@@ -1247,7 +1280,7 @@ KERNEL32_GetFileTime( uint32_t   h_file,
                       FILETIME * lp_creation_time,
                       FILETIME * lp_last_access_time,
                       FILETIME * lp_last_write_time ) {
-  LOG_WARN(( "[TODO] KERNEL32_GetFileTime(%u, %p, %p, %p)\n",
+  LOG_WARN(( "[TODO] KERNEL32_GetFileTime(%u, %p, %p, %p)",
           h_file,
           lp_creation_time,
           lp_last_access_time,
