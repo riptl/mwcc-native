@@ -65,22 +65,22 @@ compat_handle_free( uint32_t h ) {
 }
 
 static uint32_t
-compat_handle_stdio_close( void * h ) {
-  LOG_TRACE(( "Ignoring request to close stdin/stdout/stderr" ));
-  g_last_error = ERROR_SUCCESS;
-  return 1;
-}
-
-static uint32_t
-compat_handle_file_close( void * h ) {
-  FILE * f = (FILE *)h;
-  int res = fclose( (FILE *)h );
-  if( res ) {
-    LOG_DEBUG(( "CloseHandle: fclose(%d)", fileno( f ) ));
+compat_handle_file_close( void * data ) {
+  FILE * f = (FILE *)data;
+  if( f==stdin || f==stdout || f==stderr ) {
+    LOG_TRACE(( "CloseHandle: Ignoring request to close stdin/stdout/stderr" ));
+    g_last_error = ERROR_SUCCESS;
+    return 1;
+  }
+  LOG_TRACE(( "CloseHandle: closing FILE %p", f ));
+  int fd = fileno( f );
+  int res = fclose( f );
+  if( res==0 ) {
+    LOG_DEBUG(( "CloseHandle: fclose(%d)", fd ));
     g_last_error = ERROR_SUCCESS;
     return 1;
   } else {
-    LOG_WARN(( "CloseHandle: fclose(%d) failed: %s", fileno( f ), strerror( errno ) ));
+    LOG_WARN(( "CloseHandle: fclose(%d) failed: %s", fd, strerror( errno ) ));
     g_last_error = ERROR_INVALID_HANDLE;
     return 0;
   }
@@ -276,29 +276,49 @@ KERNEL32_GetCurrentProcess( void ) {
 
 __attribute__((stdcall))
 int32_t
-KERNEL32_DuplicateHandle( void *   h_source_process_handle,
-                          void *   h_source_handle,
-                          void *   h_target_process_handle,
-                          void **  lp_target_handle,
-                          uint32_t dw_desired_access,
-                          int32_t  b_inherit_handle,
-                          uint32_t dw_options ) {
-  //fprintf( stderr, "KERNEL32_DuplicateHandle(%p, %p, %p, %p, %x, %x, %x)\n",
-  //        h_source_process_handle,
-  //        h_source_handle,
-  //        h_target_process_handle,
-  //        lp_target_handle,
-  //        dw_desired_access,
-  //        b_inherit_handle,
-  //        dw_options );
-  int fd = dup( fileno( (FILE *)h_source_handle ) );
-  if( fd<0 ) {
-    fprintf( stderr, "KERNEL32_DuplicateHandle: dup() failed: %s\n",
-            strerror( errno ) );
+KERNEL32_DuplicateHandle( uint32_t   h_source_process_handle,
+                          uint32_t   h_source_handle,
+                          uint32_t   h_target_process_handle,
+                          uint32_t * lp_target_handle,
+                          uint32_t   dw_desired_access,
+                          int32_t    b_inherit_handle,
+                          uint32_t   dw_options ) {
+  LOG_TRACE(( "KERNEL32_DuplicateHandle(%u, %u, %u, %p, %x, %x, %x)",
+              h_source_process_handle, h_source_handle,
+              h_target_process_handle, lp_target_handle,
+              dw_desired_access, b_inherit_handle, dw_options ));
+
+  /* Check handle type */
+  compat_handle_t * hdl = compat_handle_get( h_source_handle );
+  if( !hdl || hdl->close!=compat_handle_file_close ) {
     g_last_error = ERROR_INVALID_HANDLE;
     return 0;
   }
-  *lp_target_handle = fdopen( fd, "r+" );
+
+  FILE * f = (FILE *)hdl->data;
+
+  int dup_fd = dup( fileno( f ) );
+  if( dup_fd<0 ) {
+    LOG_WARN(( "KERNEL32_DuplicateHandle: dup() failed: %s", strerror( errno ) ));
+    g_last_error = ERROR_INVALID_HANDLE;
+    return 0;
+  }
+
+  FILE * dup_f;
+  /*switch( dw_desired_access ) {
+  // Missing DUPLICATE_SAME_ACCESS mode
+  case 0x80000000: dup_f = fdopen( dup_fd, "rb"  ); break;
+  case 0x40000000: dup_f = fdopen( dup_fd, "wb"  ); break;
+  case 0xc0000000: dup_f = fdopen( dup_fd, "wb+" ); break;
+  default:
+    LOG_ERR(( "Unsupported KERNEL32_DuplicateHandle desired_access mode 0x%08x", dw_desired_access ));
+    g_last_error = ERROR_INVALID_PARAMETER;
+    return INVALID_HANDLE_VALUE;
+  }
+  assert( dup_f );*/
+  dup_f = fdopen( dup_fd, "wb+" );
+
+  *lp_target_handle = compat_handle_alloc( dup_f, compat_handle_file_close );
   return 1;
 }
 
@@ -795,6 +815,7 @@ KERNEL32_GetExitCodeProcess( uint32_t h_process,
 __attribute__((stdcall))
 int
 KERNEL32_CloseHandle( uint32_t h_object ) {
+  LOG_TRACE(( "KERNEL32_CloseHandle(%u)", h_object ));
   compat_handle_t * hdl = compat_handle_get( h_object );
   if( !hdl ) {
     g_last_error = ERROR_INVALID_HANDLE;
@@ -930,7 +951,7 @@ KERNEL32_GetFullPathNameA( char const * lp_file_name,
   }
 
   /* Special case: license.dat */
-  if( strstr( lp_file_name, "\\license.dat" ) ) {
+  if( strstr( lp_file_name, "license.dat" ) ) {
     LOG_DEBUG(( "KERNEL32_GetFullPathNameA: requested license.dat" ));
     return snprintf( lp_buffer, n_buffer_length, "L:\\license.dat" );
   }
@@ -987,12 +1008,45 @@ KERNEL32_SetFilePointer( uint32_t  h_file,
                          int32_t   l_distance_to_move,
                          int32_t * lp_distance_to_move_high,
                          uint32_t  dw_move_method ) {
-  fprintf( stderr, "KERNEL32_SetFilePointer(%u, %d, %p, %u)\n",
-          h_file,
-          l_distance_to_move,
-          lp_distance_to_move_high,
-          dw_move_method );
-  return 0;
+  int whence;
+  switch( dw_move_method ) {
+  case FILE_BEGIN:   whence = SEEK_SET; break;
+  case FILE_CURRENT: whence = SEEK_CUR; break;
+  case FILE_END:     whence = SEEK_END; break;
+  default:
+    LOG_ERR(( "KERNEL32_SetFilePointer: invalid move_method (%d)", dw_move_method ));
+    g_last_error = ERROR_INVALID_PARAMETER;
+    return INVALID_SET_FILE_POINTER;
+  }
+
+  /* Check handle type */
+  compat_handle_t * hdl = compat_handle_get( h_file );
+  if( !hdl || hdl->close!=compat_handle_file_close ) {
+    g_last_error = ERROR_INVALID_HANDLE;
+    return 0;
+  }
+
+  FILE * f = (FILE *)hdl->data;
+  int fd = fileno( f );
+
+  uint64_t bits64 = (uint32_t)l_distance_to_move;
+  if( lp_distance_to_move_high ) bits64 |= (((int64_t)(*lp_distance_to_move_high)<<32));
+  int64_t seek = (int64_t)bits64;
+
+  LOG_TRACE(( "KERNEL32_SetFilePointer(%u, %d, %p) (whence=%d, seek=%lld)",
+              h_file,
+              l_distance_to_move, lp_distance_to_move_high,
+              dw_move_method, seek ));
+
+  seek = lseek64( fd, seek, whence );
+  if( seek<0 ) {
+    LOG_WARN(( "KERNEL32_SetFilePointer(%u): lseek64 failed: %s", h_file, strerror( errno ) ));
+    g_last_error = ERROR_INVALID_PARAMETER;
+    return INVALID_SET_FILE_POINTER;
+  }
+
+  if( lp_distance_to_move_high ) *lp_distance_to_move_high = ((uint64_t)seek)<<32;
+  return (uint32_t)seek;
 }
 
 __attribute__((stdcall))
@@ -1010,7 +1064,7 @@ KERNEL32_WriteFile( uint32_t     h_file,
 
   /* Check handle type */
   compat_handle_t * hdl = compat_handle_get( h_file );
-  if( !hdl || (hdl->close!=compat_handle_stdio_close && hdl->close!=compat_handle_file_close) ) {
+  if( !hdl || hdl->close!=compat_handle_file_close ) {
     g_last_error = ERROR_INVALID_HANDLE;
     return 0;
   }
@@ -1046,7 +1100,7 @@ KERNEL32_ReadFile( uint32_t   h_file,
 
   compat_handle_t * h = compat_handle_get( h_file );
   compat_handle_t * hdl = compat_handle_get( h_file );
-  if( !hdl || (hdl->close!=compat_handle_stdio_close && hdl->close!=compat_handle_file_close) ) {
+  if( !hdl || hdl->close!=compat_handle_file_close ) {
     g_last_error = ERROR_INVALID_HANDLE;
     return 0;
   }
@@ -1056,7 +1110,7 @@ KERNEL32_ReadFile( uint32_t   h_file,
   if( lp_number_of_bytes_read ) *lp_number_of_bytes_read = n;
 
   if( n!=n_number_of_bytes_to_read ) {
-    LOG_WARN(( "KERNEL32_ReadFile(%u): fread failed: %s", h_file, strerror( errno ) ));
+    LOG_WARN(( "KERNEL32_ReadFile(%u): fread(f=%p) failed: %s", h_file, f, strerror( errno ) ));
   }
 
   return 1;
@@ -1096,14 +1150,6 @@ KERNEL32_CreateFileA( char const * lp_file_name,
     return INVALID_HANDLE_VALUE;
   }
 
-  LOG_DEBUG(( "KERNEL32_CreateFileA(\"%s\", %#x, %#x, %p, %u, %u, %u)",
-              lp_file_name,
-              dw_desired_access, dw_share_mode,
-              lp_security_attributes,
-              dw_creation_disposition,
-              dw_flags_and_attributes,
-              h_template_file ));
-
   if( !file ) {
     LOG_WARN(( "KERNEL32_CreateFileA: fopen(\"%s\") failed: %s", file_path, strerror( errno ) ));
     switch( errno ) {
@@ -1111,6 +1157,7 @@ KERNEL32_CreateFileA( char const * lp_file_name,
     case EEXIST:  g_last_error = ERROR_ALREADY_EXISTS; break;
     case ENOENT:  g_last_error = ERROR_FILE_NOT_FOUND; break;
     case ENOTDIR: g_last_error = ERROR_PATH_NOT_FOUND; break;
+    case EROFS:   g_last_error = ERROR_WRITE_FAULT;    break;
     default:
       LOG_WARN(( "don't have a Win32 error code for %s", strerror( errno ) ));
       g_last_error = ERROR_NOT_SUPPORTED;
@@ -1120,6 +1167,15 @@ KERNEL32_CreateFileA( char const * lp_file_name,
   }
 
   uint32_t h = compat_handle_alloc( file, compat_handle_file_close );
+  LOG_DEBUG(( "KERNEL32_CreateFileA(\"%s\", %#x, %#x, %p, %u, %u, %u) = %u (FILE = %p)",
+              lp_file_name,
+              dw_desired_access, dw_share_mode,
+              lp_security_attributes,
+              dw_creation_disposition,
+              dw_flags_and_attributes,
+              h_template_file,
+              h,
+              file ));
   return h;
 }
 
@@ -1133,8 +1189,28 @@ KERNEL32_GetTickCount( void ) {
 __attribute__((stdcall))
 int
 KERNEL32_DeleteFileA( char const * lp_file_name ) {
-  fprintf( stderr, "KERNEL32_DeleteFileA(%p)\n", lp_file_name );
-  return 0;
+  char file_path[ PATH_MAX ];
+
+  uint32_t n = compat_winpath_to_posix( file_path, sizeof(file_path), lp_file_name );
+  if( n==0 ) {
+    LOG_TRACE(( "KERNEL32_DeleteFileA: Cannot represent path \"%s\"", lp_file_name ));
+    g_last_error = ERROR_FILE_NOT_FOUND;
+    return INVALID_HANDLE_VALUE;
+  }
+  if( n>sizeof(file_path) ) {
+    LOG_TRACE(( "KERNEL32_DeleteFileA: Oversize unix path (%lu bytes)", n ));
+    g_last_error = ERROR_INSUFFICIENT_BUFFER;
+    return INVALID_HANDLE_VALUE;
+  }
+
+  LOG_DEBUG(( "KERNEL32_DeleteFileA: unlink(\"%s\")", file_path ));
+  if( !unlink( file_path ) ) {
+    LOG_WARN(( "KERNEL32_DeleteFileA: unlink(\"%s\") failed: %s", file_path, strerror( errno ) ));
+    g_last_error = ERROR_ACCESS_DENIED; /* TODO errno */
+    return 0;
+  }
+
+  return 1;
 }
 
 __attribute__((stdcall))
@@ -1167,15 +1243,15 @@ KERNEL32_FormatMessageA( uint32_t  dw_flags,
 
 __attribute__((stdcall))
 int
-KERNEL32_GetFileTime( uint32_t h_file,
-                      void *   lp_creation_time,
-                      void *   lp_last_access_time,
-                      void *   lp_last_write_time ) {
-  fprintf( stderr, "KERNEL32_GetFileTime(%u, %p, %p, %p)\n",
+KERNEL32_GetFileTime( uint32_t   h_file,
+                      FILETIME * lp_creation_time,
+                      FILETIME * lp_last_access_time,
+                      FILETIME * lp_last_write_time ) {
+  LOG_WARN(( "[TODO] KERNEL32_GetFileTime(%u, %p, %p, %p)\n",
           h_file,
           lp_creation_time,
           lp_last_access_time,
-          lp_last_write_time );
+          lp_last_write_time ));
   return 0;
 }
 
@@ -1200,7 +1276,7 @@ KERNEL32_GetFileSize( uint32_t h_file,
 
   /* Check handle type */
   compat_handle_t * hdl = compat_handle_get( h_file );
-  if( !hdl || (hdl->close!=compat_handle_stdio_close && hdl->close!=compat_handle_file_close) ) {
+  if( !hdl || hdl->close!=compat_handle_file_close ) {
     g_last_error = ERROR_INVALID_HANDLE;
     return 0;
   }
@@ -1211,7 +1287,7 @@ KERNEL32_GetFileSize( uint32_t h_file,
   /* Backup current seek */
   int64_t prev = lseek64( fd, 0,    SEEK_CUR );
   if( prev<0 ) {
-    LOG_WARN(( "KERNEL32_GetFileSize(%u): fseek64 failed: %s", h_file, strerror( errno ) ));
+    LOG_WARN(( "KERNEL32_GetFileSize(%u): lseek64 failed: %s", h_file, strerror( errno ) ));
     g_last_error = ERROR_FILE_NOT_FOUND;
     return INVALID_FILE_SIZE;
   }
@@ -1222,7 +1298,7 @@ KERNEL32_GetFileSize( uint32_t h_file,
 
   LOG_DEBUG(( "KERNEL32_GetFileSize(%u) = %lld", h_file, end ));
 
-  if( *lp_file_size_high ) *lp_file_size_high = ((uint64_t)end)<<32;
+  if( lp_file_size_high ) *lp_file_size_high = ((uint64_t)end)<<32;
   return (uint32_t)end;
 }
 
@@ -1259,14 +1335,14 @@ KERNEL32_SetStdHandle( uint32_t n_std_handle,
 __attribute__((stdcall))
 void
 KERNEL32_GetSystemTime( void * lp_system_time ) {
-  fprintf( stderr, "KERNEL32_GetSystemTime(%p)\n", lp_system_time );
+  LOG_WARN(( "[TODO] KERNEL32_GetSystemTime(%p)" ));
 }
 
 __attribute__((stdcall))
 int
 KERNEL32_SystemTimeToFileTime( void * lp_system_time,
                                void * lp_file_time ) {
-  fprintf( stderr, "KERNEL32_SystemTimeToFileTime(%p, %p)\n", lp_system_time, lp_file_time );
+  LOG_WARN(( "KERNEL32_SystemTimeToFileTime(%p, %p)", lp_system_time, lp_file_time ));
   return 0;
 }
 
@@ -1501,13 +1577,13 @@ KERNEL32_GetACP( void ) {
 __attribute__((stdcall))
 void
 KERNEL32_GetLocalTime( void * lp_system_time ) {
-  fprintf( stderr, "KERNEL32_GetLocalTime(%p)\n", lp_system_time );
+  LOG_WARN(( "[TODO] KERNEL32_GetLocalTime(%p)", lp_system_time ));
 }
 
 __attribute__((stdcall))
 uint32_t
 KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information ) {
-  fprintf( stderr, "KERNEL32_GetTimeZoneInformation(%p)\n", lp_time_zone_information );
+  LOG_WARN(( "[TODO] KERNEL32_GetTimeZoneInformation(%p)", lp_time_zone_information ));
   return 0;
 }
 
@@ -1852,9 +1928,9 @@ main( int     argc,
 
   unsetenv( "PATH" );
 
-  assert( compat_stdin  = compat_handle_alloc( stdin,  compat_handle_stdio_close ) );
-  assert( compat_stdout = compat_handle_alloc( stdout, compat_handle_stdio_close ) );
-  assert( compat_stderr = compat_handle_alloc( stderr, compat_handle_stdio_close ) );
+  assert( compat_stdin  = compat_handle_alloc( stdin,  compat_handle_file_close ) );
+  assert( compat_stdout = compat_handle_alloc( stdout, compat_handle_file_close ) );
+  assert( compat_stderr = compat_handle_alloc( stderr, compat_handle_file_close ) );
 
   __pe_text_start_enter();
 }

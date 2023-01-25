@@ -30,43 +30,43 @@ File I/O not yet implemented, so no compiler conversion is functional yet.
 
 Checking if the `-help` page works is useful for checking runtime compatibility.
 
-| Target | Tool        | Version         | Runtime Built       | `-help`    |
-|--------|-------------|-----------------|---------------------|------------|
-| EPPC   | `mwasmeppc` | 2.3.2 build 106 | 2000-06-02 15:30:53 | ☠️ SIGSEGV |
-| EPPC   | `mwldeppc`  | 2.3.3 build 126 | 2000-03-21 19:00:24 | ❌ assert   |
-| EPPC   | `mwldeppc`  | 2.3.3 build 137 | 2001-02-07 12:15:53 | ❌ assert   |
-| EPPC   | `mwcceppc`  | 2.3.3 build 144 | 2000-04-13 14:30:41 | ❌ assert   |
-| EPPC   | `mwcceppc`  | 2.3.3 build 159 | 2001-02-07 12:08:38 | ❌ assert   |
-| EPPC   | `mwcceppc`  | 2.3.3 build 163 | 2001-04-23 10:58:30 | ❌ assert   |
-| EPPC   | `mwldeppc`  | 2.4.1 build 47  | 2001-06-12 11:53:24 | ?          |
-| EPPC   | `mwcceppc`  | 2.4.2 build 81  | 2002-05-07 23:39:33 | ?          |
-| EPPC   | `mwldeppc`  | 2.4.2 build 81  | 2002-05-07 23:43:34 | ?          |
-| EPPC   | `mwcceppc`  | 2.4.2 build 92  | 2002-09-16 15:14:48 | ✅          |
-| EPPC   | `mwldeppc`  | 2.4.7 build 92  | 2002-09-16 15:15:26 | ?          |
-| EPPC   | `mwcceppc`  | 2.4.7 build 102 | 2002-11-07 12:45:57 | ✅          |
-| EPPC   | `mwcceppc`  | 2.4.7 build 105 | 2003-02-20 14:21:02 | ✅          |
-| EPPC   | `mwcceppc`  | 2.4.7 build 107 | 2003-07-14 14:19:11 | ?          |
-| EPPC   | `mwldeppc`  | 2.4.7 build 107 | 2003-07-14 14:20:31 | ?          |
-| EPPC   | `mwcceppc`  | 2.4.7 build 108 | 2004-07-22 17:19:15 | ?          |
-| EPPC   | `mwldeppc`  | 3.0.4           | 2004-08-13 10:40:59 | ?          |
-| EPPC   | `mwasmeppc` | 4.0 build 50315 | 2005-03-15 23:48:10 | ?          |
-| EPPC   | `mwldeppc`  | 4.1 build 51213 | 2005-12-13 17:41:17 | ?          |
-| EPPC   | `mwcceppc`  | 4.1 build 60126 | 2006-01-26 08:43:54 | ?          |
-| EPPC   | `mwcceppc`  | 4.1 build 60831 | 2006-08-31 18:18:06 | ?          |
-| EPPC   | `mwasmeppc` | 4.2 build 142   | 2008-08-26 02:27:18 | ☠️ SIGSEGV |
-| EPPC   | `mwcceppc`  | 4.2 build 142   | 2008-08-26 02:32:39 | ✅          |
-| EPPC   | `mwldeppc`  | 4.2 build 142   | 2008-08-26 02:33:56 | ✅          |
-| EPPC   | `mwasmeppc` | 4.2 build 60320 | 2006-03-20 23:12:52 | ?          |
-| EPPC   | `mwldeppc`  | 4.2 build 60320 | 2006-03-20 23:19:16 | ?          |
-| EPPC   | `mwasmeppc` | 4.3 build 151   | 2009-04-02 14:58:50 | ☠️ SIGILL  |
-| EPPC   | `mwcceppc`  | 4.3 build 151   | 2009-04-02 15:04:17 | ✅          |
-| EPPC   | `mwldeppc`  | 4.3 build 151   | 2009-04-02 15:05:36 | ✅          |
-| EPPC   | `mwasmeppc` | 4.3 build 172   | 2010-04-23 11:35:15 | ☠️ SIGSEGV |
-| EPPC   | `mwcceppc`  | 4.3 build 172   | 2010-04-23 11:38:37 | ✅          |
-| EPPC   | `mwldeppc`  | 4.3 build 172   | 2010-04-23 11:39:30 | ✅          |
-| EPPC   | `mwasmeppc` | 4.3 build 213   | 2011-09-05 12:57:32 | ☠️ SIGSEGV |
-| EPPC   | `mwcceppc`  | 4.3 build 213   | 2011-09-05 13:01:10 | ✅          |
-| EPPC   | `mwldeppc`  | 4.3 build 213   | 2011-09-05 13:02:03 | ✅          |
+| Target | Tool        | Version         | Runtime Built       | `-help`    | `-c` |
+|--------|-------------|-----------------|---------------------|------------|------|
+| EPPC   | `mwasmeppc` | 2.3.2 build 106 | 2000-06-02 15:30:53 | ☠️ SIGSEGV | ?    |
+| EPPC   | `mwldeppc`  | 2.3.3 build 126 | 2000-03-21 19:00:24 | ✅          | ?    |
+| EPPC   | `mwldeppc`  | 2.3.3 build 137 | 2001-02-07 12:15:53 | ✅          | ?    |
+| EPPC   | `mwcceppc`  | 2.3.3 build 144 | 2000-04-13 14:30:41 | ✅          | ✅    |
+| EPPC   | `mwcceppc`  | 2.3.3 build 159 | 2001-02-07 12:08:38 | ✅          | ✅    |
+| EPPC   | `mwcceppc`  | 2.3.3 build 163 | 2001-04-23 10:58:30 | ✅          | ✅    |
+| EPPC   | `mwldeppc`  | 2.4.1 build 47  | 2001-06-12 11:53:24 | ?          | ?    |
+| EPPC   | `mwcceppc`  | 2.4.2 build 81  | 2002-05-07 23:39:33 | ?          | ?    |
+| EPPC   | `mwldeppc`  | 2.4.2 build 81  | 2002-05-07 23:43:34 | ?          | ?    |
+| EPPC   | `mwcceppc`  | 2.4.2 build 92  | 2002-09-16 15:14:48 | ✅          | ?    |
+| EPPC   | `mwldeppc`  | 2.4.7 build 92  | 2002-09-16 15:15:26 | ?          | ?    |
+| EPPC   | `mwcceppc`  | 2.4.7 build 102 | 2002-11-07 12:45:57 | ✅          | ?    |
+| EPPC   | `mwcceppc`  | 2.4.7 build 105 | 2003-02-20 14:21:02 | ✅          | ?    |
+| EPPC   | `mwcceppc`  | 2.4.7 build 107 | 2003-07-14 14:19:11 | ?          | ?    |
+| EPPC   | `mwldeppc`  | 2.4.7 build 107 | 2003-07-14 14:20:31 | ?          | ?    |
+| EPPC   | `mwcceppc`  | 2.4.7 build 108 | 2004-07-22 17:19:15 | ?          | ?    |
+| EPPC   | `mwldeppc`  | 3.0.4           | 2004-08-13 10:40:59 | ?          | ?    |
+| EPPC   | `mwasmeppc` | 4.0 build 50315 | 2005-03-15 23:48:10 | ?          | ?    |
+| EPPC   | `mwldeppc`  | 4.1 build 51213 | 2005-12-13 17:41:17 | ?          | ?    |
+| EPPC   | `mwcceppc`  | 4.1 build 60126 | 2006-01-26 08:43:54 | ?          | ?    |
+| EPPC   | `mwcceppc`  | 4.1 build 60831 | 2006-08-31 18:18:06 | ?          | ?    |
+| EPPC   | `mwasmeppc` | 4.2 build 142   | 2008-08-26 02:27:18 | ☠️ SIGSEGV | ?    |
+| EPPC   | `mwcceppc`  | 4.2 build 142   | 2008-08-26 02:32:39 | ✅          | ✅    |
+| EPPC   | `mwldeppc`  | 4.2 build 142   | 2008-08-26 02:33:56 | ✅          | ?    |
+| EPPC   | `mwasmeppc` | 4.2 build 60320 | 2006-03-20 23:12:52 | ?          | ?    |
+| EPPC   | `mwldeppc`  | 4.2 build 60320 | 2006-03-20 23:19:16 | ?          | ?    |
+| EPPC   | `mwasmeppc` | 4.3 build 151   | 2009-04-02 14:58:50 | ☠️ SIGILL  | ?    |
+| EPPC   | `mwcceppc`  | 4.3 build 151   | 2009-04-02 15:04:17 | ✅          | ✅    |
+| EPPC   | `mwldeppc`  | 4.3 build 151   | 2009-04-02 15:05:36 | ✅          | ?    |
+| EPPC   | `mwasmeppc` | 4.3 build 172   | 2010-04-23 11:35:15 | ☠️ SIGSEGV | ?    |
+| EPPC   | `mwcceppc`  | 4.3 build 172   | 2010-04-23 11:38:37 | ✅          | ✅    |
+| EPPC   | `mwldeppc`  | 4.3 build 172   | 2010-04-23 11:39:30 | ✅          | ?    |
+| EPPC   | `mwasmeppc` | 4.3 build 213   | 2011-09-05 12:57:32 | ☠️ SIGSEGV | ?    |
+| EPPC   | `mwcceppc`  | 4.3 build 213   | 2011-09-05 13:01:10 | ✅          | ✅    |
+| EPPC   | `mwldeppc`  | 4.3 build 213   | 2011-09-05 13:02:03 | ✅          | ?    |
 
 **Demo**
 

@@ -263,6 +263,12 @@
 
 #define INVALID_FILE_SIZE 0xffffffff
 
+#define INVALID_SET_FILE_POINTER 0xffffffff
+
+#define FILE_BEGIN   0
+#define FILE_CURRENT 1
+#define FILE_END     2
+
 #define FILE_ATTRIBUTE_READONLY            0x00000001
 #define FILE_ATTRIBUTE_HIDDEN              0x00000002
 #define FILE_ATTRIBUTE_SYSTEM              0x00000004
@@ -444,13 +450,13 @@ KERNEL32_GetCurrentProcess( void );
 
 __attribute__((stdcall))
 int32_t
-KERNEL32_DuplicateHandle( void *   h_source_process_handle,
-                          void *   h_source_handle,
-                          void *   h_target_process_handle,
-                          void **  lp_target_handle,
-                          uint32_t dw_desired_access,
-                          int32_t  b_inherit_handle,
-                          uint32_t dw_options );
+KERNEL32_DuplicateHandle( uint32_t   h_source_process_handle,
+                          uint32_t   h_source_handle,
+                          uint32_t   h_target_process_handle,
+                          uint32_t * lp_target_handle,
+                          uint32_t   dw_desired_access,
+                          int32_t    b_inherit_handle,
+                          uint32_t   dw_options );
 
 __attribute__((stdcall))
 int32_t
@@ -640,10 +646,10 @@ KERNEL32_FormatMessageA( uint32_t  dw_flags,
 
 __attribute__((stdcall))
 int
-KERNEL32_GetFileTime( uint32_t h_file,
-                      void *   lp_creation_time,
-                      void *   lp_last_access_time,
-                      void *   lp_last_write_time );
+KERNEL32_GetFileTime( uint32_t   h_file,
+                      FILETIME * lp_creation_time,
+                      FILETIME * lp_last_access_time,
+                      FILETIME * lp_last_write_time );
 
 __attribute__((stdcall))
 int
