@@ -1718,9 +1718,9 @@ __attribute__((stdcall))
 uint32_t
 VERSION_GetFileVersionInfoSizeA( char const * lptstr_filename,
                                  uint32_t *   lpdw_handle ) {
-  LOG_WARN(( "[TODO] VERSION_GetFileVersionInfoSizeA(%p, %p)", lptstr_filename, lpdw_handle ));
+  LOG_DEBUG(( "VERSION_GetFileVersionInfoSizeA(%s, %p)", lptstr_filename, lpdw_handle ));
   lpdw_handle = NULL;
-  return 0;
+  return __pe_rodata_version_end - __pe_rodata_version_start;
 }
 
 __attribute__((stdcall))
@@ -1729,8 +1729,9 @@ VERSION_GetFileVersionInfoA( char const * lptstr_filename,
                              uint32_t     dw_handle,
                              uint32_t     dw_len,
                              void *       lp_data ) {
-  fprintf( stderr, "VERSION_GetFileVersionInfoA(%p, %u, %u, %p)\n", lptstr_filename, dw_handle, dw_len, lp_data );
-  return 0;
+  LOG_DEBUG(( "VERSION_GetFileVersionInfoA(%s, %u, %p)", lptstr_filename, dw_len, lp_data ));
+  memcpy( lp_data, __pe_rodata_version_start, dw_len );
+  return 1;
 }
 
 __attribute__((stdcall))
@@ -1739,7 +1740,45 @@ VERSION_VerQueryValueA( void const * p_block,
                         char const * lp_sub_block,
                         void **      lplp_buffer,
                         uint32_t *   pu_len ) {
-  fprintf( stderr, "VERSION_VerQueryValueA(%p, %p, %p, %p)\n", p_block, lp_sub_block, lplp_buffer, pu_len );
+  LOG_DEBUG(( "VERSION_VerQueryValueA(%p, %s, %p, %p)", p_block, lp_sub_block, lplp_buffer, pu_len ));
+  if( 0!=strcmp( lp_sub_block, "\\" ) ) {
+    LOG_WARN(( "VERSION_VerQueryValueA: unhandled sub block %s", lp_sub_block ));
+
+    if( strstr( lp_sub_block, "\\CompanyName" ) ) {
+      *lplp_buffer = "Freescale Semiconductor, Inc.";
+      *pu_len = 30;
+      return 1;
+    }
+    if( strstr( lp_sub_block, "\\ProductName" ) ) {
+      *lplp_buffer = "Freescale CodeWarrior";
+      *pu_len = 22;
+      return 1;
+    }
+    if( strstr( lp_sub_block, "\\LegalCopyright" ) ) {
+      *lplp_buffer = "Copyright \xa9 2000-2010";
+      *pu_len = 23;
+      return 1;
+    }
+
+    *lplp_buffer = "(unknown)";
+    *pu_len = 10;
+    return 1;
+  }
+
+  /* Search for 0xFEEF04BD magic */
+  uint32_t const magic = 0xFEEF04BD;
+  uint32_t const * p = p_block;
+  /* TODO missing bounds check */
+  for( int i=0; i<16; i++, p++ ) {
+    if( *p==magic ) {
+      /* Found it! */
+      *lplp_buffer = (void *)p;
+      *pu_len = 0x3c;
+      return 1;
+    }
+  }
+
+  LOG_WARN(( "VERSION_VerQueryValueA: didn't find VS_FIXEDFILEINFO" ));
   return 0;
 }
 

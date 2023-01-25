@@ -357,6 +357,8 @@ void compat_handle_free( uint32_t h );
 extern uint8_t __pe_text_start[];
 extern uint8_t __pe_rodata_exc_start[];
 extern uint8_t __pe_rodata_start[];
+extern uint8_t __pe_rodata_version_start[];
+extern uint8_t __pe_rodata_version_end[];
 extern uint8_t __pe_data_start[];
 extern uint8_t __pe_data_CRT_start[];
 extern uint8_t __pe_data_idata_start[];
