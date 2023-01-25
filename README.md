@@ -13,9 +13,15 @@ This project converts several Windows-only Metrowerks CodeWarrior tools into sta
 
 ### Support Matrix
 
-File I/O not yet implemented, so no compiler conversion is functional yet.
-
-Checking if the `-help` page works is useful for checking runtime compatibility.
+How to read:
+- Target: Product type
+- Tool
+  - `mwasm*`: Assembler, usually can be replaced with GNU binutils
+  - `mwcc*`: C/C++ compiler
+  - `mwld*`: Linker
+- Version: EXE ProductVersion
+- `-help`: Does the help page work? (useful for checking runtime compatibility)
+- `-c`: Can it compile files?
 
 | Target | Tool        | Version         | Runtime Built       | `-help`    | `-c` |
 |--------|-------------|-----------------|---------------------|------------|------|
