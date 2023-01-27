@@ -15,6 +15,8 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/wait.h>
 #include <linux/limits.h>
 
 #include "compat.h"
@@ -143,7 +145,7 @@ compat_winpath_to_posix( char *       out,
   out[0] = '\0';
 
   char const * str = compat_check_winpath_absolute( win );
-  if( str && win[0]!='\\' && win[0]!='U' ) {
+  if( str && win[0]!='\\' && win[0]!='Z' ) {
     /* Absolute path, but not in unix volume */
     return 0;
   }
@@ -192,7 +194,7 @@ typedef struct _CONSOLE_SCREEN_BUFFER_INFO CONSOLE_SCREEN_BUFFER_INFO;
 
 static CONSOLE_SCREEN_BUFFER_INFO console_buf = {0};
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 ADVAPI32_RegOpenKeyExA( uint32_t     h_key,
                         char const * lp_sub_key,
@@ -218,7 +220,7 @@ ADVAPI32_RegOpenKeyExA( uint32_t     h_key,
   return ERROR_ACCESS_DENIED;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 ADVAPI32_RegQueryValueExA( void *       h_key,
                            char const * lp_value_name,
@@ -236,14 +238,14 @@ ADVAPI32_RegQueryValueExA( void *       h_key,
   return ERROR_ACCESS_DENIED;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 ADVAPI32_RegCloseKey( void * h_key ) {
   LOG_ERR(( "[TODO] ADVAPI32_RegCloseKey(%p)", h_key ));
   return ERROR_ACCESS_DENIED;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_IsBadReadPtr( void const * lp,
                        uint32_t     ucb ) {
@@ -252,7 +254,7 @@ KERNEL32_IsBadReadPtr( void const * lp,
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_RtlUnwind( void * target_frame,
                     void * target_ip,
@@ -261,20 +263,20 @@ KERNEL32_RtlUnwind( void * target_frame,
   puts( "KERNEL32_RtlUnwind" );
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_ExitProcess( uint32_t exit_code ) {
-  LOG_INFO(( "KERNEL32_ExitProcess(%d)\n", exit_code ));
+  LOG_INFO(( "KERNEL32_ExitProcess(%d)", exit_code ));
   exit( exit_code );
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_GetCurrentProcess( void ) {
   return -1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_DuplicateHandle( uint32_t   h_source_process_handle,
                           uint32_t   h_source_handle,
@@ -322,13 +324,13 @@ KERNEL32_DuplicateHandle( uint32_t   h_source_process_handle,
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_GetLastError( void ) {
   return g_last_error;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetStdHandle( int32_t n_std_handle ) {
   uint32_t h;
@@ -343,7 +345,7 @@ KERNEL32_GetStdHandle( int32_t n_std_handle ) {
   return h;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_InitializeCriticalSection( void * lp_critical_section ) {
 # ifdef HAS_THREADS
@@ -354,24 +356,25 @@ KERNEL32_InitializeCriticalSection( void * lp_critical_section ) {
 # endif /* HAS_THREADS */
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_DeleteCriticalSection( void * lp_critical_section ) {
+  LOG_TRACE(( "KERNEL32_DeleteCriticalSection(%p)", lp_critical_section ));
 # ifdef HAS_THREADS
   pthread_mutex_destroy( lp_critical_section );
 # endif /* HAS_THREADS */
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_EnterCriticalSection( void * lp_critical_section ) {
+  LOG_TRACE(( "KERNEL32_EnterCriticalSection(%p)", lp_critical_section ));
 # ifdef HAS_THREADS
-  fprintf( stderr, "KERNEL32_EnterCriticalSection(%p)\n", lp_critical_section );
   pthread_mutex_lock( lp_critical_section );
 # endif /* HAS_THREADS */
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_LeaveCriticalSection( void * lp_critical_section ) {
 # ifdef HAS_THREADS
@@ -442,7 +445,7 @@ compat_handle_findfile_close( void * opaque ) {
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_FindFirstFileA( char const *       lp_file_name,
                          WIN32_FIND_DATAA * lp_find_file_data ) {
@@ -513,7 +516,7 @@ KERNEL32_FindFirstFileA( char const *       lp_file_name,
   return h;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FindNextFileA( uint32_t h_find_file,
                         void *   lp_find_file_data ) {
@@ -536,7 +539,7 @@ KERNEL32_FindNextFileA( uint32_t h_find_file,
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FindClose( uint32_t h_find_file ) {
   compat_handle_t * h = compat_handle_get( h_find_file );
@@ -556,7 +559,7 @@ KERNEL32_FindClose( uint32_t h_find_file ) {
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetFileAttributesA( char const * lp_file_name ) {
   /* Special case: Check if program requested */
@@ -610,7 +613,7 @@ KERNEL32_GetFileAttributesA( char const * lp_file_name ) {
   return mode;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 char *
 KERNEL32_GetCommandLineA( void ) {
   static char * cmd = NULL;
@@ -668,7 +671,7 @@ KERNEL32_GetCommandLineA( void ) {
 
 static char * g_envstr = NULL;
 
-__attribute__((stdcall))
+WIN32_STDCALL
 char *
 KERNEL32_GetEnvironmentStrings( void ) {
   if( g_envstr ) return g_envstr;
@@ -697,7 +700,7 @@ KERNEL32_GetEnvironmentStrings( void ) {
   return g_envstr;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FreeEnvironmentStringsA( char * lpsz_environment_block ) {
   if( !g_envstr ) return 0;
@@ -706,7 +709,7 @@ KERNEL32_FreeEnvironmentStringsA( char * lpsz_environment_block ) {
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
                                char *   lp_buffer ) {
@@ -736,7 +739,7 @@ KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
   } while( *s++ );
 
   /* Copy to output buffer */
-  lp_buffer[0] = 'U';
+  lp_buffer[0] = 'Z';
   lp_buffer[1] = ':';
   memcpy( lp_buffer+prefix_sz, unix_path, unix_path_sz );
 
@@ -746,27 +749,27 @@ KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
   return sz-1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetCurrentDirectoryA( char const * lp_path_name ) {
-  fprintf( stderr, "KERNEL32_SetCurrentDirectoryA(%s)\n", lp_path_name );
+  LOG_WARN(( "[TODO] KERNEL32_SetCurrentDirectoryA(%s)", lp_path_name ));
   g_last_error = ERROR_ACCESS_DENIED;
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetSystemDefaultLangID( void ) {
   LOG_WARN(( "[TODO] KERNEL32_GetSystemDefaultLangID()" ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetShortPathNameA( char const * lpsz_long_path,
                             char *       lpsz_short_path,
                             int          cch_buffer ) {
-  fprintf( stderr, "KERNEL32_GetShortPathNameA(%s, %p, %d)\n", lpsz_long_path, lpsz_short_path, cch_buffer );
+  LOG_WARN(( "[TODO] KERNEL32_GetShortPathNameA(%s, %p, %d)", lpsz_long_path, lpsz_short_path, cch_buffer ));
   return 0;
 }
 
@@ -774,7 +777,15 @@ KERNEL32_GetShortPathNameA( char const * lpsz_long_path,
    Process Launching
  ********************************************************************************/
 
-__attribute__((stdcall))
+static uint32_t
+compat_handle_proc_close( void * data ) {}
+
+struct compat_proc_state {
+  pid_t pid;
+  int status;
+};
+
+WIN32_STDCALL
 int
 KERNEL32_CreateProcessA( char const * lp_application_name,
                          char *       lp_command_line,
@@ -785,7 +796,7 @@ KERNEL32_CreateProcessA( char const * lp_application_name,
                          void *       lp_environment,
                          char const * lp_current_directory,
                          void *       lp_startup_info,
-                         void *       lp_process_information ) {
+                         PROCESS_INFORMATION * lp_process_information ) {
   if( 0!=strncmp( "C:\\Windows\\System32\\", lp_application_name, 20 ) ) {
     LOG_ERR(( "KERNEL32_CreateProcessA: Refusing to launch %s", lp_application_name ));
     g_last_error = ERROR_ACCESS_DENIED;
@@ -815,7 +826,26 @@ KERNEL32_CreateProcessA( char const * lp_application_name,
     __builtin_unreachable();
   }
 
-  fprintf( stderr, "KERNEL32_CreateProcessA(\"%s\", \"%s\", %p, %p, %d, %u, %p, \"%s\", %p, %p)",
+  if( child<0 ) {
+    LOG_ERR(( "KERNEL32_CreateProcessA: fork() failed: %s", strerror( errno ) ));
+    g_last_error = ERROR_ACCESS_DENIED;
+    return 0;
+  }
+
+  int status;
+  if( waitpid( child, &status, WNOHANG ) ) {
+    LOG_ERR(( "KERNEL32_CreateProcessA: waitpid(%d) failed: %s", child, strerror( errno ) ));
+    g_last_error = ERROR_ACCESS_DENIED;
+    return 0;
+  }
+
+  struct compat_proc_state * state = calloc( 1, sizeof(*state) );
+  assert( state );
+  state->pid = child;
+
+  uint32_t h = compat_handle_alloc( state, compat_handle_proc_close );
+
+  LOG_INFO(( "KERNEL32_CreateProcessA(\"%s\", \"%s\", %p, %p, %d, %u, %p, \"%s\", %p, %p)",
           lp_application_name,
           lp_command_line,
           lp_process_attributes,
@@ -825,27 +855,55 @@ KERNEL32_CreateProcessA( char const * lp_application_name,
           lp_environment,
           lp_current_directory,
           lp_startup_info,
-          lp_process_information );
+          lp_process_information ));
+
+  lp_process_information->hProcess = h;
+  lp_process_information->hThread = h;
+  lp_process_information->dwProcessId = h;
+  lp_process_information->dwThreadId = h;
+
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_WaitForSingleObject( uint32_t h_handle,
                               uint32_t dw_milliseconds ) {
-  fprintf( stderr, "KERNEL32_WaitForSingleObject(%u, %u)\n", h_handle, dw_milliseconds );
+  LOG_INFO(( "KERNEL32_WaitForSingleObject(%u, %u)", h_handle, dw_milliseconds ));
+
+  /* Check handle type */
+  compat_handle_t * hdl = compat_handle_get( h_handle );
+  if( !hdl || hdl->close!=compat_handle_proc_close ) {
+    g_last_error = ERROR_INVALID_HANDLE;
+    return 0;
+  }
+
+  struct compat_proc_state * state = hdl->data;
+  waitpid( state->pid, &state->status, 0 );
+
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
-KERNEL32_GetExitCodeProcess( uint32_t h_process,
+KERNEL32_GetExitCodeProcess( uint32_t   h_process,
                              uint32_t * lp_exit_code ) {
-  fprintf( stderr, "KERNEL32_GetExitCodeProcess(%u, %p)\n", h_process, lp_exit_code );
-  return 0;
+  LOG_WARN(( "[WARN] KERNEL32_GetExitCodeProcess(%u, %p)", h_process, lp_exit_code ));
+
+  /* Check handle type */
+  compat_handle_t * hdl = compat_handle_get( h_process );
+  if( !hdl || hdl->close!=compat_handle_proc_close ) {
+    g_last_error = ERROR_INVALID_HANDLE;
+    return 0;
+  }
+
+  struct compat_proc_state * state = hdl->data;
+  *lp_exit_code = WEXITSTATUS( state->status );
+
+  return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_CloseHandle( uint32_t h_object ) {
   LOG_TRACE(( "KERNEL32_CloseHandle(%u)", h_object ));
@@ -863,47 +921,47 @@ KERNEL32_CloseHandle( uint32_t h_object ) {
 static __thread uint32_t tls_index = 1;
 static __thread uint32_t tls_slots[COMPAT_TLS_SIZE];
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_TlsAlloc( void ) {
   uint32_t index = tls_index++;
   if( index>=COMPAT_TLS_SIZE )
     return TLS_OUT_OF_INDEXES;
   tls_slots[ index ] = 0;
-  //fprintf( stderr, "KERNEL32_TlsAlloc() = %d\n", index );
+  LOG_TRACE(( "KERNEL32_TlsAlloc() = %d", index ));
   return index;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_TlsFree( uint32_t dw_tls_index ) {
-  //fprintf( stderr, "KERNEL32_TlsFree(%u)\n", dw_tls_index );
+  LOG_TRACE(( "KERNEL32_TlsFree(%u)", dw_tls_index ));
   if( dw_tls_index>=COMPAT_TLS_SIZE )
     return 0;
   g_last_error = ERROR_SUCCESS;
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_TlsGetValue( uint32_t dw_tls_index ) {
   uint32_t val = tls_slots[ dw_tls_index ];
-  //fprintf( stderr, "KERNEL32_TlsGetValue(%u) = %#x\n", dw_tls_index, val );
+  LOG_TRACE(( "KERNEL32_TlsGetValue(%u) = %#x", dw_tls_index, val ));
   g_last_error = ERROR_SUCCESS;
   return val;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_TlsSetValue( uint32_t dw_tls_index,
                       uint32_t lp_tls_value ) {
-  //fprintf( stderr, "KERNEL32_TlsSetValue(%u, %#x)\n", dw_tls_index, lp_tls_value );
+  LOG_TRACE(( "KERNEL32_TlsSetValue(%u, %#x)", dw_tls_index, lp_tls_value ));
   tls_slots[ dw_tls_index ] = lp_tls_value;
   g_last_error = ERROR_SUCCESS;
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 KERNEL32_GetModuleHandleA( char const * lp_module_name ) {
   LOG_DEBUG(( "KERNEL32_GetModuleHandleA(\"%s\")", lp_module_name ));
@@ -918,12 +976,12 @@ KERNEL32_GetModuleHandleA( char const * lp_module_name ) {
   return NULL;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetModuleFileNameA( void *   h_module,
                              char *   lp_file_name,
                              uint32_t n_size ) {
-  fprintf( stderr, "KERNEL32_GetModuleFileNameA(%p, %p, %u)\n", h_module, lp_file_name, n_size );
+  LOG_DEBUG(( "KERNEL32_GetModuleFileNameA(%p, %p, %u)", h_module, lp_file_name, n_size ));
   if( h_module == &g_cur_module ) {
     snprintf( lp_file_name, n_size, "%s", __progname );
     return 1;
@@ -931,24 +989,24 @@ KERNEL32_GetModuleFileNameA( void *   h_module,
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 KERNEL32_LoadLibraryA( char const * lp_lib_file_name ) {
-  fprintf( stderr, "KERNEL32_LoadLibraryA(\"%s\")\n", lp_lib_file_name );
+  LOG_DEBUG(( "KERNEL32_LoadLibraryA(\"%s\")", lp_lib_file_name ));
   if( strcmp( lp_lib_file_name, __progname )==0 )
     return &g_cur_library;
   g_last_error = ERROR_FILE_NOT_FOUND;
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FreeLibrary( void * h_lib_module ) {
-  fprintf( stderr, "KERNEL32_FreeLibrary(%p)\n", h_lib_module );
+  LOG_WARN(( "[WARN] KERNEL32_FreeLibrary(%p)", h_lib_module ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_GlobalAlloc( uint32_t u_flags,
                       uint32_t dw_bytes ) {
@@ -958,19 +1016,19 @@ KERNEL32_GlobalAlloc( uint32_t u_flags,
   if( ptr && (u_flags&0x40)!=0 ) {
     memset( ptr, 0, dw_bytes );
   }
-  //fprintf( stderr, "KERNEL32_GlobalAlloc(%#x, %u) = %p\n", u_flags, dw_bytes, ptr );
+  LOG_TRACE(( "KERNEL32_GlobalAlloc(%#x, %u) = %p", u_flags, dw_bytes, ptr ));
   return (int32_t *)ptr;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_GlobalFree( int32_t * h_mem ) {
-  //fprintf( stderr, "KERNEL32_GlobalFree(%p)\n", h_mem );
+  LOG_TRACE(( "KERNEL32_GlobalFree(%p)", h_mem ));
   free( h_mem );
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetFullPathNameA( char const * lp_file_name,
                            uint32_t     n_buffer_length,
@@ -1035,7 +1093,7 @@ KERNEL32_GetFullPathNameA( char const * lp_file_name,
   return sz-1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_SetFilePointer( uint32_t  h_file,
                          int32_t   l_distance_to_move,
@@ -1082,7 +1140,7 @@ KERNEL32_SetFilePointer( uint32_t  h_file,
   return (uint32_t)seek;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_WriteFile( uint32_t     h_file,
                     void const * lp_buffer,
@@ -1120,7 +1178,7 @@ KERNEL32_WriteFile( uint32_t     h_file,
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_ReadFile( uint32_t   h_file,
                    void *     lp_buffer,
@@ -1149,7 +1207,7 @@ KERNEL32_ReadFile( uint32_t   h_file,
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_CreateFileA( char const * lp_file_name,
                       uint32_t     dw_desired_access,
@@ -1212,14 +1270,16 @@ KERNEL32_CreateFileA( char const * lp_file_name,
   return h;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetTickCount( void ) {
-  LOG_WARN(( "[TODO] KERNEL32_GetTickCount()" ));
-  return 0;
+  LOG_TRACE(( "KERNEL32_GetTickCount()" ));
+  struct timespec tv;
+  clock_gettime( CLOCK_MONOTONIC, &tv );
+  return (tv.tv_sec*1000) + (tv.tv_nsec/1000000);
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_DeleteFileA( char const * lp_file_name ) {
   char file_path[ PATH_MAX ];
@@ -1246,15 +1306,15 @@ KERNEL32_DeleteFileA( char const * lp_file_name ) {
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_MoveFileA( char const * lp_existing_file_name,
                     char const * lp_new_file_name ) {
-  fprintf( stderr, "KERNEL32_MoveFileA(%p, %p)\n", lp_existing_file_name, lp_new_file_name );
+  LOG_WARN(( "[WARN] KERNEL32_MoveFileA(%p, %p)", lp_existing_file_name, lp_new_file_name ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_FormatMessageA( uint32_t  dw_flags,
                          void *    lp_source,
@@ -1263,18 +1323,33 @@ KERNEL32_FormatMessageA( uint32_t  dw_flags,
                          char *    lp_buffer,
                          uint32_t  n_size,
                          void *    arguments ) {
-  fprintf( stderr, "KERNEL32_FormatMessageA(%u, %p, %u, %u, %p, %u, %p)\n",
+  if( dw_flags==0x00001000 ) {
+    LOG_DEBUG(( "KERNEL32_FormatMessageA(0x%08x, %p, %u, %u, %p, %u, %p)",
+                dw_flags, lp_source, dw_message_id, dw_language_id, lp_buffer, n_size, arguments ));
+    if( dw_message_id==0x0000000a ) {
+      if( n_size<strlen("The operation completed successfully.")+1 ) {
+        g_last_error = ERROR_INSUFFICIENT_BUFFER;
+        return 0;
+      }
+      strcpy( lp_buffer, "The operation completed successfully." );
+      return strlen(lp_buffer)+1;
+    }
+    LOG_WARN(( "KERNEL32_FormatMessageA: Unknown dw_message_id 0x%08x", dw_message_id ));
+    g_last_error = ERROR_INVALID_PARAMETER;
+    return 0;
+  }
+  LOG_WARN(( "[WARN] KERNEL32_FormatMessageA(%#x, %p, %u, %u, %p, %u, %p)",
           dw_flags,
           lp_source,
           dw_message_id,
           dw_language_id,
           lp_buffer,
           n_size,
-          arguments );
+          arguments ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetFileTime( uint32_t   h_file,
                       FILETIME * lp_creation_time,
@@ -1288,21 +1363,21 @@ KERNEL32_GetFileTime( uint32_t   h_file,
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetFileTime( uint32_t h_file,
                       void *   lp_creation_time,
                       void *   lp_last_access_time,
                       void *   lp_last_write_time ) {
-  fprintf( stderr, "KERNEL32_SetFileTime(%u, %p, %p, %p)\n",
+  LOG_WARN(( "[WARN] KERNEL32_SetFileTime(%u, %p, %p, %p)",
           h_file,
           lp_creation_time,
           lp_last_access_time,
-          lp_last_write_time );
+          lp_last_write_time ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetFileSize( uint32_t h_file,
                       uint32_t * lp_file_size_high ) {
@@ -1335,43 +1410,43 @@ KERNEL32_GetFileSize( uint32_t h_file,
   return (uint32_t)end;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetEndOfFile( uint32_t h_file ) {
   LOG_WARN(( "KERNEL32_SetEndOfFile(%u)", h_file ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_CreateDirectoryA( char const * lp_path_name,
                            void *       lp_security_attributes ) {
-  fprintf( stderr, "KERNEL32_CreateDirectoryA(%p, %p)\n", lp_path_name, lp_security_attributes );
+  LOG_WARN(( "[WARN] KERNEL32_CreateDirectoryA(%p, %p)", lp_path_name, lp_security_attributes ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_RemoveDirectoryA( char const * lp_path_name ) {
-  fprintf( stderr, "KERNEL32_RemoveDirectoryA(%p)\n", lp_path_name );
+  LOG_WARN(( "[WARN] KERNEL32_RemoveDirectoryA(%p)", lp_path_name ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetStdHandle( uint32_t n_std_handle,
                        uint32_t h_handle ) {
-  fprintf( stderr, "KERNEL32_SetStdHandle(%u, %u)\n", n_std_handle, h_handle );
+  LOG_WARN(( "[WARN] KERNEL32_SetStdHandle(%u, %u)", n_std_handle, h_handle ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_GetSystemTime( void * lp_system_time ) {
   LOG_WARN(( "[TODO] KERNEL32_GetSystemTime(%p)" ));
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SystemTimeToFileTime( void * lp_system_time,
                                void * lp_file_time ) {
@@ -1379,20 +1454,20 @@ KERNEL32_SystemTimeToFileTime( void * lp_system_time,
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_CompareFileTime( void * lp_file_time_1,
                           void * lp_file_time_2 ) {
-  fprintf( stderr, "KERNEL32_CompareFileTime(%p, %p)\n", lp_file_time_1, lp_file_time_2 );
+  LOG_WARN(( "[WARN] KERNEL32_CompareFileTime(%p, %p)", lp_file_time_1, lp_file_time_2 ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_GlobalReAlloc( int32_t * h_mem,
                         uint32_t  u_bytes,
                         uint32_t  u_flags ) {
-  //fprintf( stderr, "KERNEL32_GlobalReAlloc(%p, %u, %#x)\n", h_mem, u_bytes, u_flags );
+  LOG_TRACE(( "KERNEL32_GlobalReAlloc(%p, %u, %#x)", h_mem, u_bytes, u_flags ));
   if( u_bytes==0 )
     u_bytes=1;
 
@@ -1427,54 +1502,54 @@ KERNEL32_GlobalReAlloc( int32_t * h_mem,
   return obj;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GlobalFlags( int32_t * h_mem ) {
-  //fprintf( stderr, "KERNEL32_GlobalFlags(%p)\n", h_mem );
+  LOG_TRACE(( "KERNEL32_GlobalFlags(%p)", h_mem ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FileTimeToSystemTime( void * lp_file_time,
                                void * lp_system_time ) {
-  fprintf( stderr, "KERNEL32_FileTimeToSystemTime(%p, %p)\n", lp_file_time, lp_system_time );
+  LOG_WARN(( "[WARN] KERNEL32_FileTimeToSystemTime(%p, %p)", lp_file_time, lp_system_time ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_FindResourceA( uint32_t     h_module,
                         char const * lp_name,
                         char const * lp_type ) {
-  fprintf( stderr, "KERNEL32_FindResourceA(%u, %p, %p)\n", h_module, lp_name, lp_type );
+  LOG_WARN(( "[WARN] KERNEL32_FindResourceA(%u, %p, %p)", h_module, lp_name, lp_type ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_LoadResource( uint32_t h_module,
                        uint32_t h_resource ) {
-  fprintf( stderr, "KERNEL32_LoadResource(%u, %u)\n", h_module, h_resource );
+  LOG_WARN(( "[WARN] KERNEL32_LoadResource(%u, %u)", h_module, h_resource ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 KERNEL32_LockResource( int32_t * h_resource ) {
-  fprintf( stderr, "KERNEL32_LockResource(%p)\n", h_resource );
+  LOG_WARN(( "[WARN] KERNEL32_LockResource(%p)", h_resource ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_SizeofResource( uint32_t h_module,
                          uint32_t h_resource ) {
-  fprintf( stderr, "KERNEL32_SizeofResource(%u, %u)\n", h_module, h_resource );
+  LOG_WARN(( "[WARN] KERNEL32_SizeofResource(%u, %u)", h_module, h_resource ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_CreateFileMappingA( uint32_t     h_file,
                              void *       lp_file_mapping_attributes,
@@ -1482,55 +1557,55 @@ KERNEL32_CreateFileMappingA( uint32_t     h_file,
                              uint32_t     dw_maximum_size_high,
                              uint32_t     dw_maximum_size_low,
                              char const * lp_name ) {
-  fprintf( stderr, "KERNEL32_CreateFileMappingA(%u, %p, %u, %u, %u, %p)\n",
+  LOG_WARN(( "[WARN] KERNEL32_CreateFileMappingA(%u, %p, %u, %u, %u, %p)",
           h_file,
           lp_file_mapping_attributes,
           fl_protect,
           dw_maximum_size_high,
           dw_maximum_size_low,
-          lp_name );
+          lp_name ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_MapViewOfFile( uint32_t h_file_mapping_object,
                         uint32_t dw_desired_access,
                         uint32_t dw_file_offset_high,
                         uint32_t dw_file_offset_low,
                         uint32_t dw_number_of_bytes_to_map ) {
-  fprintf( stderr, "KERNEL32_MapViewOfFile(%u, %u, %u, %u, %u)\n",
+  LOG_WARN(( "[WARN] KERNEL32_MapViewOfFile(%u, %u, %u, %u, %u)",
           h_file_mapping_object,
           dw_desired_access,
           dw_file_offset_high,
           dw_file_offset_low,
-          dw_number_of_bytes_to_map );
+          dw_number_of_bytes_to_map ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_UnmapViewOfFile( int32_t * lp_base_address ) {
-  fprintf( stderr, "KERNEL32_UnmapViewOfFile(%p)\n", lp_base_address );
+  LOG_WARN(( "[WARN] KERNEL32_UnmapViewOfFile(%p)", lp_base_address ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetSystemDirectoryA( char * lp_buffer,
                               uint32_t u_size ) {
-  //fprintf( stderr, "KERNEL32_GetSystemDirectoryA(%p, %u)\n", lp_buffer, u_size );
+  LOG_DEBUG(( "KERNEL32_GetSystemDirectoryA(%p, %u)", lp_buffer, u_size ));
   return snprintf( lp_buffer, u_size, "C:\\Windows\\System32" );
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetWindowsDirectoryA( char *   lp_buffer,
                                uint32_t u_size ) {
   return snprintf( lp_buffer, u_size, "C:\\Windows" );
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetConsoleCtrlHandler( void * lp_handler_routine,
                                 int    b_add ) {
@@ -1538,11 +1613,11 @@ KERNEL32_SetConsoleCtrlHandler( void * lp_handler_routine,
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetConsoleScreenBufferInfo( uint32_t h_console_output,
                                      void *   lp_console_screen_buffer_info ) {
-  //fprintf( stderr, "KERNEL32_GetConsoleScreenBufferInfo(%u, %p)\n", h_console_output, lp_console_screen_buffer_info );
+  LOG_DEBUG(( "KERNEL32_GetConsoleScreenBufferInfo(%u, %p)", h_console_output, lp_console_screen_buffer_info ));
   
   struct winsize w;
   int res = ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
@@ -1558,24 +1633,24 @@ KERNEL32_GetConsoleScreenBufferInfo( uint32_t h_console_output,
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetFileAttributesA( char const * lp_file_name,
                              uint32_t     dw_file_attributes ) {
-  fprintf( stderr, "KERNEL32_SetFileAttributesA(%p, %u)\n", lp_file_name, dw_file_attributes );
+  LOG_WARN(( "[WARN] KERNEL32_SetFileAttributesA(%p, %u)", lp_file_name, dw_file_attributes ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_OpenFileMappingA( uint32_t     dw_desired_access,
                            int          b_inherit_handle,
                            char const * lp_name ) {
-  fprintf( stderr, "KERNEL32_OpenFileMappingA(%u, %u, %p)\n", dw_desired_access, b_inherit_handle, lp_name );
+  LOG_WARN(( "[WARN] KERNEL32_OpenFileMappingA(%u, %u, %p)", dw_desired_access, b_inherit_handle, lp_name ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_MultiByteToWideChar( uint32_t     u_code_page,
                               uint32_t     dw_flags,
@@ -1583,59 +1658,59 @@ KERNEL32_MultiByteToWideChar( uint32_t     u_code_page,
                               int          cch_multi_byte,
                               void *       lp_wide_char_str,
                               int          cch_wide_char ) {
-  fprintf( stderr, "KERNEL32_MultiByteToWideChar(%u, %u, %p, %u, %p, %u)\n",
+  LOG_WARN(( "[WARN] KERNEL32_MultiByteToWideChar(%u, %u, %p, %u, %p, %u)",
           u_code_page,
           dw_flags,
           lp_multi_byte_str,
           cch_multi_byte,
           lp_wide_char_str,
-          cch_wide_char );
+          cch_wide_char ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_IsValidCodePage( uint32_t u_code_page ) {
-  fprintf( stderr, "KERNEL32_IsValidCodePage(%u)\n", u_code_page );
+  LOG_WARN(( "[WARN] KERNEL32_IsValidCodePage(%u)", u_code_page ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetACP( void ) {
-  fprintf( stderr, "KERNEL32_GetACP()\n" );
+  LOG_WARN(( "[WARN] KERNEL32_GetACP()" ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_GetLocalTime( void * lp_system_time ) {
   LOG_WARN(( "[TODO] KERNEL32_GetLocalTime(%p)", lp_system_time ));
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information ) {
   LOG_WARN(( "[TODO] KERNEL32_GetTimeZoneInformation(%p)", lp_time_zone_information ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FileTimeToLocalFileTime( void const * lp_file_time,
                                   void *       lp_local_file_time ) {
-  fprintf( stderr, "KERNEL32_FileTimeToLocalFileTime(%p, %p)\n", lp_file_time, lp_local_file_time );
+  LOG_WARN(( "[WARN] KERNEL32_FileTimeToLocalFileTime(%p, %p)", lp_file_time, lp_local_file_time ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_IsDBCSLeadByte( uint8_t test_char ) {
-  fprintf( stderr, "KERNEL32_IsDBCSLeadByte(%#x)\n", test_char );
+  LOG_WARN(( "[WARN] KERNEL32_IsDBCSLeadByte(%#x)", test_char ));
   return 0;
 }
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR8C_lp_checkout( int32_t v1,
                     int32_t policy,
@@ -1643,98 +1718,106 @@ LMGR8C_lp_checkout( int32_t v1,
                     char *  version,
                     int     num_lic,
                     char *  license_file_list ) {
-  //fprintf( stderr, "LMGR8C_lp_checkout(%p, %p, \"%s\", \"%s\", %u, \"%s\")\n",
+  //LOG_WARN(( "[WARN] LMGR8C_lp_checkout(%p, %p, \"%s\", \"%s\", %u, \"%s\")",
   //         v1,
   //         policy,
   //         feature, 
   //         version,
   //         num_lic,
-  //         license_file_list );
+  //         license_file_list ));
   return 0;
 }
 
-__attribute__((cdecl))
+WIN32_CDECL
 void
 LMGR8C_lp_checkin( void * handle ) {
-  //fprintf( stderr, "LMGR8C_lp_checkin(%p)\n", handle );
+  LOG_WARN(( "[WARN] LMGR8C_lp_checkin(%p)", handle ));
 }
 
 static char lmgr8c_errbuf[4096] = {0};
 
 /* lp_errstring	*/
-__attribute__((cdecl))
+WIN32_CDECL
 char *
 LMGR8C_lp_errstring( void ) {
-  fprintf( stderr, "LMGR8C_lp_errstring()\n" );
+  LOG_WARN(( "LMGR8C_lp_errstring()" ));
   snprintf( lmgr8c_errbuf, sizeof(lmgr8c_errbuf), "Hello!" );
   return lmgr8c_errbuf;
 }
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR326B_lp_checkin() {
   LOG_INFO(( "LMGR326B_lp_checkin()" ));
   return 0;
 }
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR326B_lp_checkout() {
   LOG_INFO(( "LMGR326B_lp_checkout()" ));
   return 0;
 }
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR326B_lp_errstring() {
-  fprintf( stderr, "LMGR326B_lp_errstring()\n" );
+  LOG_WARN(( "[WARN] LMGR326B_lp_errstring()" ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 USER32_MessageBoxA( uint32_t    h_wnd,
                     char const * lp_text,
                     char const * lp_caption,
                     uint32_t    u_type ) {
-  fprintf( stderr, "USER32_MessageBoxA(%u, %p, %p, %u)\n", h_wnd, lp_text, lp_caption, u_type );
+  LOG_WARN(( "[WARN] USER32_MessageBoxA(%u, %p, %p, %u)", h_wnd, lp_text, lp_caption, u_type ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 USER32_LoadStringA( uint32_t h_instance,
                     uint32_t u_id,
                     char *   lp_buffer,
                     int      n_buffer_max ) {
-  fprintf( stderr, "USER32_LoadStringA(%u, %u, %p, %u)\n", h_instance, u_id, lp_buffer, n_buffer_max );
+  LOG_WARN(( "[WARN] USER32_LoadStringA(%u, %u, %p, %u)", h_instance, u_id, lp_buffer, n_buffer_max ));
   if( u_id>=__pe_str_cnt )
     return 0;
   snprintf( lp_buffer, n_buffer_max, "%s", __pe_strs[u_id] );
   return 1;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 VERSION_GetFileVersionInfoSizeA( char const * lptstr_filename,
                                  uint32_t *   lpdw_handle ) {
+# if PE_HAS_VERSION
   LOG_DEBUG(( "VERSION_GetFileVersionInfoSizeA(%s, %p)", lptstr_filename, lpdw_handle ));
   lpdw_handle = NULL;
   return __pe_rodata_version_end - __pe_rodata_version_start;
+# else
+  return 0;
+# endif
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 VERSION_GetFileVersionInfoA( char const * lptstr_filename,
                              uint32_t     dw_handle,
                              uint32_t     dw_len,
                              void *       lp_data ) {
+# if PE_HAS_VERSION
   LOG_DEBUG(( "VERSION_GetFileVersionInfoA(%s, %u, %p)", lptstr_filename, dw_len, lp_data ));
   memcpy( lp_data, __pe_rodata_version_start, dw_len );
   return 1;
+# else
+  return 0;
+# endif
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 VERSION_VerQueryValueA( void const * p_block,
                         char const * lp_sub_block,
@@ -1782,27 +1865,27 @@ VERSION_VerQueryValueA( void const * p_block,
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 ole32_CoInitialize( void * pv_reserved ) {
-  fprintf( stderr, "ole32_CoInitialize(%p)\n", pv_reserved );
+  LOG_WARN(( "[WARN] ole32_CoInitialize(%p)", pv_reserved ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 ole32_CoUninitialize( void ) {
-  fprintf( stderr, "ole32_CoUninitialize()\n" );
+  LOG_WARN(( "[WARN] ole32_CoUninitialize()" ));
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 ole32_CoCreateInstance( void *   rclsid,
                         void *   p_unk_outer,
                         uint32_t dw_cls_context,
                         void *   riid,
                         void **  ppv ) {
-  fprintf( stderr, "ole32_CoCreateInstance(%04x%04x-%04x-%04x-%04x-%04x%04x%04x, %p, %u, %p, %p)\n",
+  LOG_WARN(( "[WARN] ole32_CoCreateInstance(%04x%04x-%04x-%04x-%04x-%04x%04x%04x, %p, %u, %p, %p)",
                    ((uint16_t*)rclsid)[1],
                    ((uint16_t*)rclsid)[0],
                    ((uint16_t*)rclsid)[2],
@@ -1811,142 +1894,142 @@ ole32_CoCreateInstance( void *   rclsid,
                    __builtin_bswap16( ((uint16_t*)rclsid)[5] ),
                    __builtin_bswap16( ((uint16_t*)rclsid)[6] ),
                    __builtin_bswap16( ((uint16_t*)rclsid)[7] ),
-                   p_unk_outer, dw_cls_context, riid, ppv );
+                   p_unk_outer, dw_cls_context, riid, ppv ));
   *ppv = NULL;
-  return 1;
+  return 0x80040154;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 ole32_CoTaskMemFree( void * pv ) {
-  fprintf( stderr, "ole32_CoTaskMemFree(%p)\n", pv );
+  LOG_WARN(( "[WARN] ole32_CoTaskMemFree(%p)", pv ));
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 ole32_CoTaskMemAlloc( uint32_t cb ) {
-  fprintf( stderr, "ole32_CoTaskMemAlloc(%u)\n", cb );
+  LOG_WARN(( "[WARN] ole32_CoTaskMemAlloc(%u)", cb ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_WSAStartup( uint16_t w_version_requested,
                    void *   lp_wsa_data ) {
-  fprintf( stderr, "WS2_32_WSAStartup(%u, %p)\n", w_version_requested, lp_wsa_data );
+  LOG_WARN(( "[WARN] WS2_32_WSAStartup(%u, %p)", w_version_requested, lp_wsa_data ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_WSAGetLastError( void ) {
   LOG_ERR(( "[TODO] WS2_32_WSAGetLastError()" ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint16_t
 WS2_32_ntohs( uint16_t netshort ) {
   return __builtin_bswap16( netshort );
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 char const *
 WS2_32_inet_ntoa( void * in_addr ) {
   LOG_ERR(( "[TODO] WS2_32_inet_ntoa(%p)", in_addr ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_shutdown( uint32_t s,
                  int      how ) {
-  fprintf( stderr, "WS2_32_shutdown(%u, %u)\n", s, how );
+  LOG_WARN(( "[WARN] WS2_32_shutdown(%u, %u)", s, how ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_closesocket( uint32_t s ) {
-  fprintf( stderr, "WS2_32_closesocket(%u)\n", s );
+  LOG_WARN(( "[WARN] WS2_32_closesocket(%u)", s ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_WSACleanup( void ) {
-  fprintf( stderr, "WS2_32_WSACleanup()\n" );
+  LOG_WARN(( "[WARN] WS2_32_WSACleanup()" ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 WS2_32_socket( int af,
                int type,
                int protocol ) {
-  fprintf( stderr, "WS2_32_socket(%u, %u, %u)\n", af, type, protocol );
+  LOG_WARN(( "[WARN] WS2_32_socket(%u, %u, %u)", af, type, protocol ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint16_t
 WS2_32_htons( uint16_t hostshort ) {
-  fprintf( stderr, "WS2_32_htons(%u)\n", hostshort );
+  LOG_WARN(( "[WARN] WS2_32_htons(%u)", hostshort ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 WS2_32_inet_addr( char const * cp ) {
-  fprintf( stderr, "WS2_32_inet_addr(%p)\n", cp );
+  LOG_WARN(( "[WARN] WS2_32_inet_addr(%p)", cp ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_connect( uint32_t s,
                 void *   name,
                 int      namelen ) {
-  fprintf( stderr, "WS2_32_connect(%u, %p, %u)\n", s, name, namelen );
+  LOG_WARN(( "[WARN] WS2_32_connect(%u, %p, %u)", s, name, namelen ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_select( int    nfds,
                void * readfds,
                void * writefds,
                void * exceptfds,
                void * timeout ) {
-  fprintf( stderr, "WS2_32_select(%u, %p, %p, %p, %p)\n", nfds, readfds, writefds, exceptfds, timeout );
+  LOG_WARN(( "[WARN] WS2_32_select(%u, %p, %p, %p, %p)", nfds, readfds, writefds, exceptfds, timeout ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32___WSAFDIsSet( uint32_t s,
                      void *   fd_set ) {
-  fprintf( stderr, "WS2_32___WSAFDIsSet(%u, %p)\n", s, fd_set );
+  LOG_WARN(( "[WARN] WS2_32___WSAFDIsSet(%u, %p)", s, fd_set ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_send( uint32_t s,
              void *   buf,
              int      len,
              int      flags ) {
-  fprintf( stderr, "WS2_32_send(%u, %p, %u, %u)\n", s, buf, len, flags );
+  LOG_WARN(( "[WARN] WS2_32_send(%u, %p, %u, %u)", s, buf, len, flags ));
   return 0;
 }
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_recv( uint32_t s,
              void *   buf,
              int      len,
              int      flags ) {
-  fprintf( stderr, "WS2_32_recv(%u, %p, %u, %u)\n", s, buf, len, flags );
+  LOG_WARN(( "[WARN] WS2_32_recv(%u, %p, %u, %u)", s, buf, len, flags ));
   return 0;
 }
 

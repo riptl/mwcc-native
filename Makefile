@@ -20,7 +20,7 @@ GO=go
 PE2ELF=$(OUT)/pe2elf
 
 # Use flags
-CFLAGS=
+CFLAGS=-Werror=all
 
 # Derive ELF target names from EXE names
 ALL_EXES:=$(shell find -L exe -name '*.exe')
@@ -33,7 +33,7 @@ endif
 .PHONY: all
 all: $(ALL_ELFS)
 
-$(OUT)/%.elf: $(OUT)/%.gen.bin.o $(OUT)/%.gen.str.o $(OUT)/compat.o | $(OUT)
+$(OUT)/%.elf: $(OUT)/%.gen.bin.o $(OUT)/%.gen.str.o $(OUT)/%.gen.compat.o | $(OUT)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -static -no-pie -o $@ $^
 
@@ -41,12 +41,15 @@ $(OUT)/%.gen.str.o: $(OUT)/%.gen.str.c | $(OUT)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -static -no-pie -c -o $@ $<
 
-$(OUT)/%.gen.bin.o $(OUT)/%.gen.str.c: $(EXE)/%.exe $(PE2ELF) | $(OUT)
-	@mkdir -p $(dir $@)
-	$(PE2ELF) -i $< -o $(patsubst %.str.c,%.bin.o,$@) -out-cstr $(patsubst %.bin.o,%.str.c,$@) 
+$(OUT)/%.gen.bin.o: $(EXE)/%.exe $(PE2ELF) | $(OUT)
+	@mkdir -p $(patsubst %.gen.bin.o,%,$@)
+	$(PE2ELF) -i $< -o $@ -out-cstr $(patsubst %.bin.o,%.str.c,$@) -out-config $(patsubst %.gen.bin.o,%.gen.config.h,$@)
 
-$(OUT)/compat.o: compat.c compat.h | $(OUT)
-	$(CC) $(CFLAGS) -static -no-pie -c -o $@ $<
+$(patsubst %.elf,%.gen.str.c,$(ALL_ELFS)): %.gen.str.c: %.gen.bin.o
+$(patsubst %.elf,%.gen.config.h,$(ALL_ELFS)): %.gen.config.h: %.gen.bin.o
+
+$(OUT)/%.gen.compat.o: compat.c compat.h $(OUT)/%.gen.config.h | $(OUT)
+	$(CC) $(CFLAGS) -static -no-pie -c -include $(patsubst %.gen.compat.o,%.gen.config.h,$@) -o $@ $<
 
 $(OUT)/pe2elf: $(shell find pe2elf -name '*.go') pe2elf/ordinals.csv | $(OUT)
 	cd pe2elf && $(GO) build -o $(shell realpath $(OUT))/pe2elf -buildvcs=false .

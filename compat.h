@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define WIN32_STDCALL __attribute__((stdcall,force_align_arg_pointer))
+#define WIN32_CDECL   __attribute__((cdecl,force_align_arg_pointer))
+
 // Win32 error codes
 
 #define ERROR_SUCCESS                      0
@@ -409,7 +412,7 @@ compat_log2_( int level,
 
 // PE imports
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 ADVAPI32_RegOpenKeyExA( uint32_t     h_key,
                         const char * lp_sub_key,
@@ -417,7 +420,7 @@ ADVAPI32_RegOpenKeyExA( uint32_t     h_key,
                         uint32_t     sam_desired,
                         void **      phk_result );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 ADVAPI32_RegQueryValueExA( void *       h_key,
                            const char * lp_value_name,
@@ -426,31 +429,31 @@ ADVAPI32_RegQueryValueExA( void *       h_key,
                            uint8_t *    lp_data,
                            uint32_t *   lpcb_data );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 ADVAPI32_RegCloseKey( void * h_key );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_IsBadReadPtr( const void * lp,
                        uint32_t     ucb );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_RtlUnwind( void * target_frame,
                     void * target_ip,
                     void * exception_record,
                     void * return_value );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_ExitProcess( uint32_t exit_code );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_GetCurrentProcess( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_DuplicateHandle( uint32_t   h_source_process_handle,
                           uint32_t   h_source_handle,
@@ -460,59 +463,66 @@ KERNEL32_DuplicateHandle( uint32_t   h_source_process_handle,
                           int32_t    b_inherit_handle,
                           uint32_t   dw_options );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_GetLastError( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetStdHandle( int32_t n_std_handle );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_InitializeCriticalSection( void * lp_critical_section );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_DeleteCriticalSection( void * lp_critical_section );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_FindFirstFileA( const char *       lp_file_name,
                          WIN32_FIND_DATAA * lp_find_file_data );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetFileAttributesA( const char * lp_file_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FindNextFileA( uint32_t h_find_file,
                         void *   lp_find_file_data );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FindClose( uint32_t h_find_file );
 
 
-__attribute__((stdcall))
+WIN32_STDCALL
 char *
 KERNEL32_GetCommandLineA( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 char *
 KERNEL32_GetEnvironmentStrings( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FreeEnvironmentStringsA( char * lpsz_environment_block );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetCurrentDirectoryA( uint32_t n_buffer_length,
                                char *   lp_buffer );
 
-__attribute__((stdcall))
+typedef struct _PROCESS_INFORMATION {
+  uint32_t hProcess;
+  uint32_t hThread;
+  uint32_t dwProcessId;
+  uint32_t dwThreadId;
+} PROCESS_INFORMATION;
+
+WIN32_STDCALL
 int
 KERNEL32_CreateProcessA( const char * lp_application_name,
                          char *       lp_command_line,
@@ -523,81 +533,81 @@ KERNEL32_CreateProcessA( const char * lp_application_name,
                          void *       lp_environment,
                          const char * lp_current_directory,
                          void *       lp_startup_info,
-                         void *       lp_process_information );
+                         PROCESS_INFORMATION * lp_process_information );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_WaitForSingleObject( uint32_t h_handle,
                               uint32_t dw_milliseconds );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetExitCodeProcess( uint32_t h_process,
                              uint32_t * lp_exit_code );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_CloseHandle( uint32_t h_object );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_TlsAlloc( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_TlsFree( uint32_t dw_tls_index );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_TlsGetValue( uint32_t dw_tls_index );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_TlsSetValue( uint32_t dw_tls_index,
                       uint32_t lp_tls_value );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 KERNEL32_GetModuleHandleA( char const * lp_module_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetModuleFileNameA( void *   h_module,
                              char *   lp_file_name,
                              uint32_t n_size );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 KERNEL32_LoadLibraryA( char const * lp_lib_file_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FreeLibrary( void * h_lib_module );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_GlobalAlloc( uint32_t u_flags,
                       uint32_t dw_bytes );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_GlobalFree( int32_t * h_mem );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetFullPathNameA( char const * lp_file_name,
                            uint32_t     n_buffer_length,
                            char *       lp_buffer,
                            char **      lp_file_part );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_SetFilePointer( uint32_t  h_file,
                          int32_t   l_distance_to_move,
                          int32_t * lp_distance_to_move_high,
                          uint32_t  dw_move_method );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_WriteFile( uint32_t     h_file,
                     void const * lp_buffer,
@@ -605,7 +615,7 @@ KERNEL32_WriteFile( uint32_t     h_file,
                     uint32_t *   lp_number_of_bytes_written,
                     void *       lp_overlapped );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_ReadFile( uint32_t   h_file,
                    void *     lp_buffer,
@@ -613,7 +623,7 @@ KERNEL32_ReadFile( uint32_t   h_file,
                    uint32_t * lp_number_of_bytes_read,
                    void *     lp_overlapped );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_CreateFileA( char const * lp_file_name,
                       uint32_t     dw_desired_access,
@@ -623,20 +633,20 @@ KERNEL32_CreateFileA( char const * lp_file_name,
                       uint32_t     dw_flags_and_attributes,
                       uint32_t     h_template_file );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetTickCount( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_DeleteFileA( char const * lp_file_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_MoveFileA( char const * lp_existing_file_name,
                     char const * lp_new_file_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_FormatMessageA( uint32_t  dw_flags,
                          void *    lp_source,
@@ -646,93 +656,93 @@ KERNEL32_FormatMessageA( uint32_t  dw_flags,
                          uint32_t  n_size,
                          void *    arguments );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetFileTime( uint32_t   h_file,
                       FILETIME * lp_creation_time,
                       FILETIME * lp_last_access_time,
                       FILETIME * lp_last_write_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetFileTime( uint32_t h_file,
                       void *   lp_creation_time,
                       void *   lp_last_access_time,
                       void *   lp_last_write_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetFileSize( uint32_t h_file,
                       uint32_t * lp_file_size_high );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetEndOfFile( uint32_t h_file );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_CreateDirectoryA( char const * lp_path_name,
                            void *       lp_security_attributes );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_RemoveDirectoryA( char const * lp_path_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetStdHandle( uint32_t n_std_handle,
                        uint32_t h_handle );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_GetSystemTime( void * lp_system_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SystemTimeToFileTime( void * lp_system_time,
                                void * lp_file_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_CompareFileTime( void * lp_file_time_1,
                           void * lp_file_time_2 );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_GlobalReAlloc( int32_t * h_mem,
                         uint32_t  u_bytes,
                         uint32_t  u_flags );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GlobalFlags( int32_t * h_mem );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FileTimeToSystemTime( void * lp_file_time,
                                void * lp_system_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_FindResourceA( uint32_t     h_module,
                         char const * lp_name,
                         char const * lp_type );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_LoadResource( uint32_t h_module,
                        uint32_t h_resource );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 KERNEL32_LockResource( int32_t * h_resource );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_SizeofResource( uint32_t h_module,
                          uint32_t h_resource );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_CreateFileMappingA( uint32_t     h_file,
                              void *       lp_file_mapping_attributes,
@@ -741,7 +751,7 @@ KERNEL32_CreateFileMappingA( uint32_t     h_file,
                              uint32_t     dw_maximum_size_low,
                              char const * lp_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t *
 KERNEL32_MapViewOfFile( uint32_t h_file_mapping_object,
                         uint32_t dw_desired_access,
@@ -749,42 +759,42 @@ KERNEL32_MapViewOfFile( uint32_t h_file_mapping_object,
                         uint32_t dw_file_offset_low,
                         uint32_t dw_number_of_bytes_to_map );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_UnmapViewOfFile( int32_t * lp_base_address );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetSystemDirectoryA( char * lp_buffer,
                               uint32_t u_size );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetWindowsDirectoryA( char *   lp_buffer,
                                uint32_t u_size );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetConsoleCtrlHandler( void * lp_handler_routine,
                                 int    b_add );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetConsoleScreenBufferInfo( uint32_t h_console_output,
                                      void *   lp_console_screen_buffer_info );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetFileAttributesA( char const * lp_file_name,
                              uint32_t     dw_file_attributes );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_OpenFileMappingA( uint32_t     dw_desired_access,
                            int          b_inherit_handle,
                            char const * lp_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 KERNEL32_MultiByteToWideChar( uint32_t     u_code_page,
                               uint32_t     dw_flags,
@@ -793,46 +803,46 @@ KERNEL32_MultiByteToWideChar( uint32_t     u_code_page,
                               void *       lp_wide_char_str,
                               int          cch_wide_char );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_IsValidCodePage( uint32_t u_code_page );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetACP( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_GetLocalTime( void * lp_system_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 KERNEL32_GetTimeZoneInformation( void * lp_time_zone_information );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_FileTimeToLocalFileTime( void const * lp_file_time,
                                   void *       lp_local_file_time );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_IsDBCSLeadByte( uint8_t test_char );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_SetCurrentDirectoryA( char const * lp_path_name );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetSystemDefaultLangID( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 KERNEL32_GetShortPathNameA( char const * lpsz_long_path,
                             char *       lpsz_short_path,
                             int          cch_buffer );
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR8C_lp_checkout( int32_t v1,
                     int32_t policy,
@@ -841,68 +851,68 @@ LMGR8C_lp_checkout( int32_t v1,
                     int     num_lic,
                     char *  license_file_list );
 
-__attribute__((cdecl))
+WIN32_CDECL
 void
 LMGR8C_lp_checkin( void * handle );
 
-__attribute__((cdecl))
+WIN32_CDECL
 char *
 LMGR8C_lp_errstring( void );
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR326B_lp_checkin();
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR326B_lp_checkout();
 
-__attribute__((cdecl))
+WIN32_CDECL
 int32_t
 LMGR326B_lp_errstring();
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 USER32_MessageBoxA( uint32_t     h_wnd,
                     char const * lp_text,
                     char const * lp_caption,
                     uint32_t     u_type );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int32_t
 USER32_LoadStringA( uint32_t h_instance,
                     uint32_t u_id,
                     char *   lp_buffer,
                     int      n_buffer_max );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 VERSION_GetFileVersionInfoSizeA( char const * lptstr_filename,
                                  uint32_t *   lpdw_handle );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 VERSION_GetFileVersionInfoA( char const * lptstr_filename,
                              uint32_t     dw_handle,
                              uint32_t     dw_len,
                              void *       lp_data );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 VERSION_VerQueryValueA( void const * p_block,
                         char const * lp_sub_block,
                         void **      lplp_buffer,
                         uint32_t *   pu_len );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 ole32_CoInitialize( void * pv_reserved );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 ole32_CoUninitialize( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 ole32_CoCreateInstance( void *   rclsid,
                         void *   p_unk_outer,
@@ -910,65 +920,65 @@ ole32_CoCreateInstance( void *   rclsid,
                         void *   riid,
                         void **  ppv );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 ole32_CoTaskMemFree( void * pv );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void *
 ole32_CoTaskMemAlloc( uint32_t cb );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_WSAStartup( uint16_t w_version_requested,
                    void *   lp_wsa_data );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_WSAGetLastError( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint16_t
 WS2_32_ntohs( uint16_t netshort );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 char const *
 WS2_32_inet_ntoa( void * in_addr );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_shutdown( uint32_t s,
                  int      how );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_closesocket( uint32_t s );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_WSACleanup( void );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 WS2_32_socket( int af,
                int type,
                int protocol );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint16_t
 WS2_32_htons( uint16_t hostshort );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 uint32_t
 WS2_32_inet_addr( char const * cp );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_connect( uint32_t s,
                 void *   name,
                 int      namelen );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_select( int    nfds,
                void * readfds,
@@ -976,30 +986,30 @@ WS2_32_select( int    nfds,
                void * exceptfds,
                void * timeout );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32___WSAFDIsSet( uint32_t s,
                      void *   fd_set );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_send( uint32_t s,
              void *   buf,
              int      len,
              int      flags );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 int
 WS2_32_recv( uint32_t s,
              void *   buf,
              int      len,
              int      flags );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_EnterCriticalSection( void * lp_critical_section );
 
-__attribute__((stdcall))
+WIN32_STDCALL
 void
 KERNEL32_LeaveCriticalSection( void * lp_critical_section );
 
