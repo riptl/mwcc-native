@@ -2,6 +2,13 @@
 
 This project converts several Windows-only Metrowerks CodeWarrior tools into static Linux executables.
 
+### Related Work
+
+Also check out [decompals/wibo](https://github.com/decompals/wibo)!
+
+The goal of `wibo` is the same, but it uses a runtime loader vs binary conversion.
+`wibo` is also more stable and actively maintained as of 2023-Jan.
+
 ### Requirements
 
 - 32-bit x86 GCC toolchain with musl libc
